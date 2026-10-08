@@ -40,7 +40,7 @@ function makePlayer(hero) {
     x: WW / 2, y: WH / 2, vx: 0, vy: 0, r: 18, hp, maxHp: hp, hpShow: hp, hero, dead: false, respawnT: 0,
     aim: 0, walk: 0, moving: false, weapons: WEAPON_KEYS.filter(k => save.weapons.includes(k)), wi: 0, ammo: {}, reloadT: 0, fireCD: 0,
     dashCD: 0, dashT: 0, dashDir: 0, inv: 1.2, grenades: pvp ? 2 : 2 + up.gren, xp: 0, lvl: 1, xpNext: 12, kick: 0, firing: false, ghostT: 0, ghosts: [],
-    abCD: HEROES[hero].cd * .4, fury: 0, lastHit: null, lastHurtT: -9,
+    abCD: HEROES[hero].cd * .4, fury: 0, lastHit: null, lastHurtT: -9, look: Object.assign(myLook(), { hero }), cos: myCos(), nick: save.nick,
     mods: { dmg: 1, rate: 1, multi: 0, pierce: 0, bounce: 0, vamp: 0, speed: 1, orbs: 0, burn: 0, chain: 0, crit: .05, boom: 0, magnet: 1 },
     perkLv: {}, orbAng: 0, lavaT: 0
   };
@@ -150,15 +150,15 @@ function spawnShot(owner, wid, x, y, aim, multi, seed, remote) {
   const fan = w.pellets > 1 ? w.spread + multi * .08 : .13 * (n - 1);
   const rr = mulberry(seed);
   const dm = remote ? 0 : w.dmg * dmgScale();
-  const p = owner;
+  const p = owner, tr = owner.cos && COS[owner.cos.trail], tcol = tr && tr.col ? tr.col : w.color;
   for (let i = 0; i < n; i++) {
     const a = aim + (n > 1 ? -fan / 2 + fan * i / (n - 1) : 0) + (rr() - .5) * w.spread * (w.pellets > 1 ? .35 : 1);
     const sp = w.spd * (.95 + rr() * .1);
-    G.pb.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: (w.range || 750) / sp, dmg: dm, r: w.r, color: w.color,
+    G.pb.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: (w.range || 750) / sp, dmg: dm, r: w.r, color: tcol, tr: tr && !tr.def ? tr : null, ri: ri(0, 9),
       pierce: (w.pierce || 0) + (remote ? 0 : p.mods.pierce), bounce: remote ? 0 : p.mods.bounce, explode: w.explode || 0, hit: new Set(), rail: wid === 'rail', rocket: wid === 'rocket', remote: !!remote, owner: remote ? owner.peer : 'me' });
   }
-  flash(x, y, 70, w.color, .07);
-  part({ x, y, life: .07, size: 18, color: w.color, type: 'dot' });
+  flash(x, y, 70, tcol, .07);
+  part({ x, y, life: .07, size: 18, color: tcol, type: 'dot' });
 }
 function playerShoot(p) {
   const id = p.weapons[p.wi], w = WEAPONS[id];
@@ -182,7 +182,7 @@ function doDash() {
   const p = G.player; if (!pAlive() || p.dashCD > 0 || G.over) return;
   p.dashDir = p.moving ? Math.atan2(p.vy, p.vx) : p.aim;
   p.dashT = .2; p.inv = Math.max(p.inv, .3); p.dashCD = 2.2 * (1 - .12 * save.upg.dash);
-  smoke(p.x, p.y, 4, '#8aa0c0', 14); sfx('dash');
+  dashFx(p.cos.dash, p.x, p.y); sfx('dash');
 }
 function throwGrenade() {
   const p = G.player; if (!pAlive() || p.grenades <= 0 || G.over) return;
@@ -304,6 +304,7 @@ function enemyDeathFx(x, y, type, mine) {
   flash(x, y, r * 6, G.B.accent, .2);
   decal(x, y, G.bi === 2 ? 'scorch' : 'splat', G.bi === 0 ? '#2a4a10' : '#1a0d0b', r * 1.4);
   sfx('kill');
+  if (mine && G.player) killFx(G.player.cos.kill, x, y, big);
   G.kills++; save.stats.kills++; if (big) save.stats.bosses++;
   G.score += Math.round(d.xp * 10 * (G.endless ? 1 + G.wave * .1 : 1));
   const p = G.player;

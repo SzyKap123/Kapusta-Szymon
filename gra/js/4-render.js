@@ -96,12 +96,15 @@ function render() {
   if (pAlive()) list.push({ y: p.y, k: 2, o: p });
   for (const r of G.remotes.values()) if (!r.dead && inView(r.x, r.y, 40)) list.push({ y: r.y, k: 3, o: r });
   for (const t of G.turrets) if (inView(t.x, t.y, 30)) list.push({ y: t.y, k: 4, o: t });
+  if (pAlive() && p.pet && p.cos.pet !== 'pe_none') list.push({ y: p.pet.y + 30, k: 5, o: p.pet, id: p.cos.pet });
+  for (const r of G.remotes.values()) if (!r.dead && r.pet && r.cos && COS[r.cos.pet] && r.cos.pet !== 'pe_none') list.push({ y: r.pet.y + 30, k: 5, o: r.pet, id: r.cos.pet });
   list.sort((a, b) => a.y - b.y);
   for (const it of list) {
     if (it.k === 0) { const pr = it.o; drawSpr(ctx, pr.spr, pr.x, pr.y + (pr.shape === 'r' ? 5 : pr.kind === 'rock' ? pr.r * .16 : pr.kind === 'crystal' ? -14 : pr.kind === 'spire' ? -6 : 0)); if (pr.fuse) { ctx.globalCompositeOperation = 'lighter'; glowAt(ctx, pr.x, pr.y, 30, '#ff3d1a', .8); ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1; } }
     else if (it.k === 1) drawEnemy(it.o, now);
     else if (it.k === 2) drawPlayer(it.o, now);
     else if (it.k === 3) drawRemote(it.o, now);
+    else if (it.k === 5) { const pe = it.o, bob = Math.sin(pe.t * 3) * 3; shadowAt(ctx, pe.x, pe.y + 22, 10, 5, .4); drawSpr(ctx, petSpr(it.id), pe.x, pe.y - 6 + bob, 0, 1 + Math.sin(pe.t * 6) * .04); }
     else { shadowAt(ctx, it.o.x + 2, it.o.y + 6, 16, 9, .5); drawSpr(ctx, TURRET_SPR, it.o.x, it.o.y, it.o.aim); }
   }
   ctx.globalAlpha = 1;
@@ -171,9 +174,10 @@ function render() {
     if (!inView(b.x, b.y, 40)) continue;
     const sp = hyp(b.vx, b.vy), tl = Math.min(b.rail ? 90 : 30, sp * .03), ux = b.vx / sp, uy = b.vy / sp;
     ctx.lineCap = 'round';
-    ctx.globalAlpha = .6; ctx.strokeStyle = b.color; ctx.lineWidth = b.r * 2.2; ctx.beginPath(); ctx.moveTo(b.x - ux * tl, b.y - uy * tl); ctx.lineTo(b.x, b.y); ctx.stroke();
-    ctx.globalAlpha = 1; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = b.r * .9; ctx.beginPath(); ctx.moveTo(b.x - ux * tl * .6, b.y - uy * tl * .6); ctx.lineTo(b.x, b.y); ctx.stroke();
-    glowAt(ctx, b.x, b.y, b.r * 4.5, b.color, .7);
+    const bc = b.tr && b.tr.rainbow ? RAINBOW[(b.ri + (now * 14 | 0)) % RAINBOW.length] : b.color;
+    ctx.globalAlpha = .6; ctx.strokeStyle = bc; ctx.lineWidth = b.r * 2.2; ctx.beginPath(); ctx.moveTo(b.x - ux * tl, b.y - uy * tl); ctx.lineTo(b.x, b.y); ctx.stroke();
+    ctx.globalAlpha = 1; ctx.strokeStyle = b.tr && b.tr.dark ? '#2a0a3a' : '#ffffff'; ctx.lineWidth = b.r * .9; ctx.beginPath(); ctx.moveTo(b.x - ux * tl * .6, b.y - uy * tl * .6); ctx.lineTo(b.x, b.y); ctx.stroke();
+    glowAt(ctx, b.x, b.y, b.r * 4.5, bc, .7);
   }
   ctx.lineCap = 'butt';
   // pociski wrogów
@@ -195,7 +199,7 @@ function render() {
   // satelity i duchy zrywu
   if (pAlive()) {
     for (let i = 0; i < p.mods.orbs; i++) { const a = p.orbAng + i * TAU / p.mods.orbs, ox = p.x + Math.cos(a) * 72, oy = p.y + Math.sin(a) * 72; glowAt(ctx, ox, oy, 26, '#7fd8ff', .9); glowAt(ctx, ox, oy, 8, '#ffffff', 1); }
-    for (const gh of p.ghosts) { ctx.globalAlpha = gh.life * 1.4; drawSpr(ctx, playerSpr(p.hero, p.weapons[p.wi]), gh.x, gh.y, gh.a); }
+    for (const gh of p.ghosts) { ctx.globalAlpha = gh.life * 1.4; drawSpr(ctx, playerSpr(p.look, p.weapons[p.wi]), gh.x, gh.y, gh.a); }
     glowAt(ctx, p.x + Math.cos(p.aim) * 7, p.y + Math.sin(p.aim) * 7, 12, '#3ef0ff', .7);
     if (p.dashCD <= 0) glowAt(ctx, p.x - Math.cos(p.aim) * 15, p.y - Math.sin(p.aim) * 15, 8, '#3ef0ff', .6);
   }
@@ -211,6 +215,7 @@ function render() {
     if (q.type === 'spark') { ctx.globalAlpha = a; ctx.strokeStyle = q.color; ctx.lineWidth = q.size; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(q.x, q.y); ctx.lineTo(q.x - q.vx * .03, q.y - q.vy * .03); ctx.stroke(); }
     else if (q.type === 'dot') glowAt(ctx, q.x, q.y, q.size * (.5 + a * .5) * 2, q.color, a);
     else if (q.type === 'fire') glowAt(ctx, q.x, q.y - q.z, q.size * 1.6, q.color, a * .9);
+    else if (q.type === 'implode') { ctx.globalAlpha = a; ctx.strokeStyle = q.color; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(q.x, q.y, q.size * a, 0, TAU); ctx.stroke(); glowAt(ctx, q.x, q.y, q.size * a * .8, '#6a1aff', a * .6); }
     else if (q.type === 'ring') { ctx.globalAlpha = a; ctx.strokeStyle = q.color; ctx.lineWidth = 6 * a + 1; ctx.beginPath(); ctx.arc(q.x, q.y, q.size * (1.4 - a * .9), 0, TAU); ctx.stroke(); }
   }
   ctx.lineCap = 'butt';
@@ -220,7 +225,10 @@ function render() {
     if (G.bi === 0) glowAt(ctx, a.x, a.y, 9, a.ph % 2 > 1 ? '#c8ff6a' : '#6dffd8', al * .9);
     else if (G.bi === 1) glowAt(ctx, a.x, a.y, 5, '#ffa040', al);
   }
+  for (const o of [G.player, ...G.remotes.values()]) if (o && !o.dead && o.pet && o.cos && COS[o.cos.pet] && o.cos.pet !== 'pe_none') glowAt(ctx, o.pet.x, o.pet.y - 6, 22, COS[o.cos.pet].col || '#ffffff', .35);
   ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
+  for (const q of G.parts) if (q.type === 'shape') drawShapeParticle(ctx, q, clamp(q.life / q.max * 1.5, 0, 1));
+  ctx.globalAlpha = 1;
   if (G.bi === 2) { ctx.fillStyle = '#ffffff'; for (const a of G.amb) { ctx.globalAlpha = Math.min(1, a.life) * .7; ctx.beginPath(); ctx.arc(a.x, a.y, 1.6 + (a.ph % 1.5), 0, TAU); ctx.fill(); } ctx.globalAlpha = 1; }
   // paski życia wrogów i liczby
   for (const e of G.enemies) if (e.hb > 0 && !e.d.boss && inView(e.x, e.y, 40)) {
@@ -236,10 +244,11 @@ function render() {
   for (const r of G.remotes.values()) if (!r.dead && inView(r.x, r.y, 60)) {
     const enemy = G.mode === 'pvp', w = 44, x = r.x - w / 2, y = r.y - 40;
     ctext(r.nick || 'Gracz', r.x, y - 10, 12, enemy ? '#ffb0bd' : '#bfffd0', 'center', FU);
+    if (r.cos && COS[r.cos.title]) ctext(COS[r.cos.title].name, r.x, y - 23, 9, RAR[COS[r.cos.title].r].col, 'center', FU);
     ctx.fillStyle = 'rgba(0,0,0,.6)'; ctx.fillRect(x - 1, y - 1, w + 2, 7);
     ctx.fillStyle = enemy ? '#ff4d6d' : '#7dff8a'; ctx.fillRect(x, y, w * clamp(r.hp / (r.maxHp || 100), 0, 1), 5);
   }
-  if (G.mode === 'pvp' && pAlive()) { ctext(G.player.nick || 'Ty', G.player.x, G.player.y - 50, 12, '#bfefff', 'center', FU); }
+  if (G.mode !== 'mission' && G.mode !== 'demo' && pAlive() && G.net) { ctext(nick(), G.player.x, G.player.y - 50, 12, '#bfefff', 'center', FU); const tt = COS[G.player.cos.title]; if (tt) ctext(tt.name, G.player.x, G.player.y - 63, 9, RAR[tt.r].col, 'center', FU); }
   for (const q of G.pops) { ctx.globalAlpha = clamp(q.life * 2.5, 0, 1); ctext(q.text, q.x, q.y, q.size * (q.life > .6 ? 1 + (q.life - .6) * 3 : 1), q.color); }
   ctx.globalAlpha = 1;
   // ===== ekran =====
@@ -291,7 +300,7 @@ function drawLighting(v, now) {
 }
 
 function drawPlayer(p, now) {
-  const spr = playerSpr(p.hero, p.weapons[p.wi]);
+  const spr = playerSpr(p.look, p.weapons[p.wi]);
   // stopy
   const sw = Math.sin(p.walk) * (p.moving ? 7 : 0), fa = p.moving ? Math.atan2(p.vy, p.vx) : p.aim;
   const px = Math.cos(fa + 1.57), py = Math.sin(fa + 1.57), fx = Math.cos(fa), fy = Math.sin(fa);
@@ -326,7 +335,7 @@ function drawEnemy(e, now) {
   if (e.flash > 0) { ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = .75; drawSpr(ctx, spr, x, y, e.ang, sc); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; }
 }
 function drawRemote(r, now) {
-  const spr = playerSpr(r.hero || 'assault', r.wid || 'blaster');
+  const spr = playerSpr(r.look || r.hero || 'assault', r.wid || 'blaster');
   const fa = r.moving ? Math.atan2(r.vy, r.vx) : r.aim, sw = Math.sin(r.walk) * (r.moving ? 7 : 0);
   const px = Math.cos(fa + 1.57), py = Math.sin(fa + 1.57), fx = Math.cos(fa), fy = Math.sin(fa);
   ctx.fillStyle = '#1a2130';

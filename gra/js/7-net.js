@@ -58,7 +58,7 @@ async function leaveRoom() {
 }
 function roomPresence(extra) {
   if (!NET.gr) return;
-  NET.gr.presence(Object.assign({ n: nick(), h: save.hero, host: NET.host ? 1 : null, m: NET.host ? NET.mode : null, l: NET.host ? NET.li : null }, extra || {})).catch(() => {});
+  NET.gr.presence(Object.assign({ n: nick(), h: save.hero, t: save.cos.eq.title, host: NET.host ? 1 : null, m: NET.host ? NET.mode : null, l: NET.host ? NET.li : null }, extra || {})).catch(() => {});
 }
 function hostPeer() { return NET.peers.find(p => p.presence && p.presence.host === 1 && !p.sameTab); }
 function onRoomPeers() {
@@ -119,7 +119,8 @@ function makeNetSession(mode, gid) {
 function sendState(S) {
   const p = G.player;
   const flags = (p.dead ? 1 : 0) | (p.inv > 0 ? 2 : 0) | (p.moving ? 4 : 0);
-  const o = { gid: S.gid, n: nick(), h: p.hero,
+  const e = save.cos.eq;
+  const o = { gid: S.gid, n: nick(), h: p.hero, c: [e.skin, e.visor, e.hat, e.trail, e.dash, e.kill, e.pet, e.title],
     s: [Math.round(p.x), Math.round(p.y), Math.round(p.aim * 100), Math.round(Math.max(0, p.hp)), Math.round(p.maxHp), flags, W_IDX.indexOf(p.weapons[p.wi]), G.pvp ? G.pvp.kills : 0],
     sh: S.sh.slice(), ev: S.ev.slice(), hi: S.hi.slice() };
   if (S.mode === 'pvp') o.dk = S.dk.slice();
@@ -158,6 +159,12 @@ function netTick(S, dt) {
     const r = remoteFor(pe), sn = S.seen[pe.peer];
     if (pr.host === 1) S.hostPeer = pe.peer;
     r.nick = String(pr.n || 'Gracz').slice(0, 16); r.hero = HEROES[pr.h] ? pr.h : 'assault';
+    if (Array.isArray(pr.c) && pr.c !== r._c) {
+      r._c = pr.c; const v = (i, cat, d) => COS[pr.c[i]] && COS[pr.c[i]].cat === cat ? pr.c[i] : d;
+      r.look = { hero: r.hero, skin: v(0, 'skin', 'sk_def'), visor: v(1, 'visor', 'vi_def'), hat: v(2, 'hat', 'ht_none') };
+      r.cos = { trail: v(3, 'trail', 'tr_def'), dash: v(4, 'dash', 'da_def'), kill: v(5, 'kill', 'ki_none'), pet: v(6, 'pet', 'pe_none'), title: v(7, 'title', 'ti_rookie') };
+    }
+    if (r.look) r.look.hero = r.hero;
     const s = pr.s;
     if (Array.isArray(s)) {
       r.tx = clamp(num(s[0]), 0, WW); r.ty = clamp(num(s[1]), 0, WH); r.aim = num(s[2]) / 100; r.hp = num(s[3]); r.maxHp = Math.max(1, num(s[4], 100));
@@ -183,7 +190,7 @@ function netTick(S, dt) {
       if (n > sn.dk) {
         sn.dk = n;
         const byMe = pr.dk[1] === NET.myPeer;
-        if (byMe) { G.pvp.kills++; save.stats.pvpKills++; G.banner = { title: 'Eliminacja!', sub: r.nick, t: 1.4, max: 1.4 }; sfx('kill'); }
+        if (byMe) { G.pvp.kills++; save.stats.pvpKills++; killFx(G.player.cos.kill, r.x, r.y, true); G.banner = { title: 'Eliminacja!', sub: r.nick, t: 1.4, max: 1.4 }; sfx('kill'); }
         const killer = byMe ? 'Ty' : (G.remotes.get(pr.dk[1]) || {}).nick || '?';
         G.feed.push({ text: killer + ' → ' + r.nick, t: 5 });
         gibs(r.x, r.y, ['#c9d6e8', '#5b6a84', '#ff4d6d'], 20, 300); flash(r.x, r.y, 200, '#ff4d6d', .3);

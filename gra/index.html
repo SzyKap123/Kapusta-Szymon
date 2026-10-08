@@ -237,6 +237,64 @@ button { font: inherit; color: inherit; }
 #toast div { padding: 8px 16px; background: rgba(10,18,34,.95); box-shadow: inset 0 0 0 1px var(--amber), 0 6px 20px rgba(0,0,0,.5); font-size: 14px; animation: rise .3s ease both; text-align: center; }
 #toast div b { color: var(--amber); }
 @media (max-width: 640px) { .twoCol { grid-template-columns: minmax(0, 1fr); } }
+
+/* ---- Kolekcja i skrzynie ---- */
+.collGrid { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.6fr); gap: 12px; width: 100%; max-width: 1100px; flex: 1 1 auto; min-height: 0; }
+.collLeft, .collRight { min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: 8px; }
+#prevCv { width: 100%; aspect-ratio: 16 / 10; max-width: 100%; background: radial-gradient(circle at 50% 60%, #1c3050, #0a1220 70%); box-shadow: inset 0 0 0 1px var(--line); }
+.crates { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.crateBtn { position: relative; min-width: 0; border: 0; cursor: pointer; padding: 6px 4px 8px; display: flex; flex-direction: column; align-items: center; gap: 3px; color: var(--text);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--cc) 35%, #0a1222), #0a1222); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--cc) 60%, transparent); clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px); }
+.crateBtn .box { width: 34px; height: 28px; border-radius: 4px; background: linear-gradient(180deg, var(--cc), color-mix(in srgb, var(--cc) 45%, #000)); box-shadow: 0 0 12px var(--cc), inset 0 -3px 0 rgba(0,0,0,.3); position: relative; }
+.crateBtn .box::after { content: ''; position: absolute; left: 0; right: 0; top: 10px; height: 4px; background: rgba(0,0,0,.35); }
+.crateBtn b { font-size: 11px; letter-spacing: .04em; text-transform: uppercase; text-align: center; line-height: 1.1; }
+.crateBtn small { font-size: 11px; color: var(--dim); display: inline-flex; gap: 4px; align-items: center; }
+.crateBtn .cnt { position: absolute; top: 4px; right: 6px; font-family: var(--display); font-size: 14px; color: #fff; text-shadow: 0 0 6px var(--cc); }
+.crateBtn:hover { filter: brightness(1.2); }
+.crateBtn:focus-visible { outline: 2px solid var(--cyan); }
+.catTabs { display: flex; gap: 5px; overflow-x: auto; flex: 0 0 auto; padding-bottom: 2px; }
+.catTabs .btn { font-size: 12px; padding: .42em .8em; white-space: nowrap; flex: 0 0 auto; }
+.catTabs .btn.on { --bg: linear-gradient(180deg, #4ff6ff, #18b7d6); color: #021820; }
+.itemGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 6px; overflow-y: auto; min-height: 0; flex: 1 1 auto; align-content: start; padding: 2px; }
+.cItem { position: relative; min-width: 0; border: 0; cursor: pointer; padding: 4px 4px 6px; display: flex; flex-direction: column; align-items: center; gap: 2px; color: var(--text);
+  background: linear-gradient(180deg, rgba(255,255,255,.05), color-mix(in srgb, var(--rc) 22%, #0a1222)); box-shadow: inset 0 -3px 0 var(--rc), inset 0 0 0 1px rgba(255,255,255,.08); }
+.cItem canvas { width: 56px; height: 56px; }
+.cItem span { font-size: 10.5px; line-height: 1.15; text-align: center; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; min-height: 2.3em; }
+.cItem.lock { filter: grayscale(.85) brightness(.55); }
+.cItem.lock::after { content: '?'; position: absolute; top: 18px; left: 0; right: 0; text-align: center; font-family: var(--display); font-size: 26px; color: rgba(255,255,255,.75); }
+.cItem.eq { box-shadow: inset 0 -3px 0 var(--rc), inset 0 0 0 2px var(--cyan); }
+.cItem.eq::before { content: 'Założone'; position: absolute; top: 3px; left: 3px; font-size: 8px; letter-spacing: .08em; text-transform: uppercase; background: var(--cyan); color: #021820; padding: 1px 4px; }
+.cItem.new::before { content: 'Nowe'; position: absolute; top: 3px; left: 3px; font-size: 8px; letter-spacing: .08em; text-transform: uppercase; background: var(--lime); color: #021820; padding: 1px 4px; }
+.cItem.sel { outline: 2px solid #fff; outline-offset: -2px; }
+.cItem:focus-visible { outline: 2px solid var(--cyan); }
+.detail { display: flex; gap: 10px; align-items: center; padding: 8px 10px; background: var(--panel); box-shadow: inset 0 0 0 1px var(--line); flex: 0 0 auto; min-height: 52px; }
+.detail div { flex: 1; min-width: 0; }
+.detail h4 { margin: 0; font-size: 15px; } .detail p { margin: 2px 0 0; font-size: 11px; color: var(--dim); }
+.shards { display: inline-flex; align-items: center; gap: 6px; font-family: var(--display); font-size: 18px; color: #c9a3ff; padding: 6px 12px; background: var(--panel); box-shadow: inset 0 0 0 1px var(--line); }
+.shard { width: 12px; height: 16px; background: linear-gradient(160deg, #f0dcff, #b45cff 50%, #5a1aa8); clip-path: polygon(50% 0, 100% 35%, 70% 100%, 30% 100%, 0 35%); filter: drop-shadow(0 0 4px #b45cff); display: inline-block; }
+.progress { font-size: 11px; color: var(--dim); }
+#sCrate { justify-content: center; gap: 16px; }
+.bigCrate { width: 140px; height: 112px; border-radius: 10px; position: relative; background: linear-gradient(180deg, var(--cc), color-mix(in srgb, var(--cc) 40%, #000)); box-shadow: 0 0 50px var(--cc), inset 0 -8px 0 rgba(0,0,0,.35); cursor: pointer; border: 0; }
+.bigCrate::before { content: ''; position: absolute; left: 0; right: 0; top: 36px; height: 10px; background: rgba(0,0,0,.35); }
+.bigCrate::after { content: ''; position: absolute; left: 58px; top: 28px; width: 24px; height: 26px; border-radius: 4px; background: #ffe08a; box-shadow: 0 0 10px #ffe08a; }
+.bigCrate.shake { animation: shake .9s ease-in-out; }
+.bigCrate.boom { animation: boom .35s ease-in forwards; }
+@keyframes shake { 0%,100% { transform: none; } 15% { transform: rotate(-6deg) scale(1.02); } 30% { transform: rotate(6deg) scale(1.04); } 45% { transform: rotate(-8deg) scale(1.06); } 60% { transform: rotate(8deg) scale(1.08); } 80% { transform: rotate(-4deg) scale(1.12); } }
+@keyframes boom { to { transform: scale(1.6); opacity: 0; filter: brightness(3); } }
+.reveal { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+.rCard { width: 150px; min-width: 0; padding: 12px 10px; display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center;
+  background: radial-gradient(circle at 50% 30%, color-mix(in srgb, var(--rc) 45%, transparent), rgba(10,18,34,.95) 70%); box-shadow: inset 0 0 0 2px var(--rc), 0 0 30px color-mix(in srgb, var(--rc) 60%, transparent);
+  animation: flip .5s cubic-bezier(.3,1.5,.5,1) both; }
+.rCard:nth-child(2) { animation-delay: .25s; } .rCard:nth-child(3) { animation-delay: .5s; }
+.rCard canvas { width: 96px; height: 96px; }
+.rCard h4 { margin: 0; font-family: var(--display); font-weight: 400; font-size: 16px; }
+.rCard em { font-style: normal; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--rc); }
+.rCard small { font-size: 11px; color: var(--dim); }
+@keyframes flip { from { transform: rotateY(90deg) scale(.6); opacity: 0; } to { transform: none; opacity: 1; } }
+.subBtns .btn { position: relative; }
+.dot { position: absolute; top: -6px; right: -4px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--rose); color: #fff; font-family: var(--ui); font-size: 11px; line-height: 18px; text-align: center; }
+@media (max-width: 640px) { .collGrid { grid-template-columns: minmax(0, 1fr); } }
+@media (prefers-reduced-motion: reduce) { .bigCrate.shake, .rCard { animation: none; } }
 #sRotate { display: none; z-index: 30; justify-content: center; background: var(--void); text-align: center; }
 #sRotate .phone { width: 50px; height: 86px; border: 4px solid var(--cyan); border-radius: 10px; box-shadow: 0 0 20px rgba(62,240,255,.5); animation: turn 1.8s ease-in-out infinite; }
 @keyframes turn { 0%, 30% { transform: rotate(0); } 60%, 100% { transform: rotate(-90deg); } }
@@ -263,6 +321,7 @@ button { font: inherit; color: inherit; }
       <button id="bOnline" class="tile online" type="button"><span class="badge" id="onlineBadge" hidden>0 online</span><svg viewBox="0 0 24 24"><circle cx="8" cy="8" r="3.5" fill="currentColor"/><circle cx="17" cy="9" r="2.8" fill="currentColor"/><path fill="currentColor" d="M1.5 20c.5-4 3.2-6 6.5-6s6 2 6.5 6zM14 20c.2-2.5-.6-4.2-1.8-5.3 1.2-.6 2.8-.8 4.3-.5 2.8.5 5 2.6 5 5.8z"/></svg><b>Online</b><small>Kooperacja i PvP</small></button>
     </div>
     <div class="subBtns">
+      <button id="bColl" class="btn primary" type="button">Kolekcja<span class="dot" id="crateDot" hidden>0</span></button>
       <button id="bShop" class="btn" type="button">Zbrojownia</button>
       <button id="bAch" class="btn" type="button">Osiągnięcia</button>
       <button id="bRank" class="btn" type="button">Ranking</button>
@@ -386,6 +445,28 @@ button { font: inherit; color: inherit; }
   <p class="hint" id="dBest" style="text-align:center"></p>
   <div class="row"><button class="btn primary" id="bDailyGo" type="button">Start</button><button class="btn ghost" data-back type="button">Wróć</button></div>
 </section>
+
+<section id="sColl" class="screen" hidden>
+  <div class="head"><button class="btn ghost back" data-back type="button" aria-label="Wróć"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 5l-7 7 7 7"/></svg></button><h2>Kolekcja</h2><span class="progress" id="collProg"></span><span class="shards"><i class="shard"></i><span id="shardVal">0</span></span><span class="coins"><i class="coin"></i><span class="coinVal">0</span></span></div>
+  <div class="collGrid">
+    <div class="collLeft">
+      <canvas id="prevCv" width="480" height="300"></canvas>
+      <div class="crates" id="crateBox"></div>
+    </div>
+    <div class="collRight">
+      <div class="catTabs" id="catTabs"></div>
+      <div class="itemGrid" id="itemGrid"></div>
+      <div class="detail cutbox" id="detail"></div>
+    </div>
+  </div>
+</section>
+
+<section id="sCrate" class="screen overlay" hidden>
+  <p class="kicker" id="crKick">Skrzynia</p>
+  <button class="bigCrate" id="bigCrate" type="button" aria-label="Otwórz skrzynię"></button>
+  <div class="reveal" id="reveal"></div>
+  <div class="row" id="crBtns"></div>
+</section>
 <div id="toast" aria-live="polite"></div>
 
 <section id="sRotate" class="screen">
@@ -396,6 +477,7 @@ button { font: inherit; color: inherit; }
 
 <script src="js/1-core.js"></script>
 <script src="js/2-gfx.js"></script>
+<script src="js/1b-cosmetics.js"></script>
 <script src="js/2b-map.js"></script>
 <script src="js/2c-chars.js"></script>
 <script src="js/3-game.js"></script>
@@ -405,6 +487,7 @@ button { font: inherit; color: inherit; }
 <script src="js/4b-hud.js"></script>
 <script src="js/7-net.js"></script>
 <script src="js/5-ui.js"></script>
+<script src="js/6-coll.js"></script>
 <!--ARTIFACT-END-->
 </body>
 </html>

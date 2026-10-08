@@ -12,13 +12,14 @@ function toast(html) {
   setTimeout(() => d.remove(), 3200);
 }
 function checkAch() {
-  for (const a of ACHS) if (!save.ach[a.id] && a.test(save)) { save.ach[a.id] = 1; save.coins += a.reward; toast('Osiągnięcie: <b>' + a.name + '</b> · +' + a.reward + ' monet'); sfx('lvl'); }
-  persist(); refreshCoins();
+  for (const a of ACHS) if (!save.ach[a.id] && a.test(save)) { save.ach[a.id] = 1; save.coins += a.reward; save.cos.crates.c++; toast('Osiągnięcie: <b>' + a.name + '</b> · +' + a.reward + ' monet i skrzynia'); sfx('lvl'); }
+  for (const it of unlockAchItems()) toast('Nowy przedmiot: <b>' + it.name + '</b>');
+  persist(); refreshCoins(); if (typeof updateCrateDot === 'function') updateCrateDot();
 }
 const online = () => !!(G && G.net);
 
 // ---------- Menu ----------
-function goMenu() { state = 'menu'; resetInput(); newGame(ri(0, 2) * 3, true); show('sMenu'); refreshDailySub(); }
+function goMenu() { state = 'menu'; resetInput(); newGame(ri(0, 2) * 3, true); show('sMenu'); refreshDailySub(); if (typeof updateCrateDot === 'function') updateCrateDot(); }
 function refreshDailySub() { const d = dailySpec(); $('dailySub').textContent = d.names.join(' + '); }
 function buildLevels() {
   const box = $('biomes'); box.innerHTML = '';
@@ -158,7 +159,7 @@ function renderRoom() {
     const row = document.createElement('div'); row.className = 'prow cutbox';
     const dot = document.createElement('i'); dot.style.background = (HEROES[pr.h] || HEROES.assault).visor;
     const nm = document.createElement('span'); nm.textContent = String(pr.n || 'Gracz').slice(0, 16) + (p.sameTab ? ' (ty)' : '');
-    const tag = document.createElement('small'); tag.textContent = (pr.host === 1 ? 'gospodarz · ' : '') + (HEROES[pr.h] || HEROES.assault).name + (pr.gid ? ' · w grze' : '');
+    const tag = document.createElement('small'); tag.textContent = (pr.host === 1 ? 'gospodarz · ' : '') + (COS[pr.t] && COS[pr.t].cat === 'title' ? COS[pr.t].name + ' · ' : '') + (HEROES[pr.h] || HEROES.assault).name + (pr.gid ? ' · w grze' : '');
     row.append(dot, nm, tag); pl.appendChild(row);
   }
   const ctl = $('roomCtl'); ctl.innerHTML = '';
@@ -277,6 +278,7 @@ function finishLevel() {
     stats = [[G.score, 'Wynik'], [G.kills, 'Pokonani'], [time, 'Czas']];
   }
   save.coins += G.coins + bonus; save.stats.coinsEarned += G.coins + bonus;
+  gameRewards(mode, won, Math.max(0, G.wave));
   persist(); checkAch();
   state = 'result'; resetInput();
   $('rKick').textContent = kick;

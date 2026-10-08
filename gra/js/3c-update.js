@@ -32,7 +32,7 @@ function updatePlayer(dt) {
   p.moving = m > .12;
   if (p.dashT > 0) {
     p.dashT -= dt; p.vx = Math.cos(p.dashDir) * 800; p.vy = Math.sin(p.dashDir) * 800;
-    p.ghostT -= dt; if (p.ghostT <= 0) { p.ghostT = .025; p.ghosts.push({ x: p.x, y: p.y, a: p.aim, life: .22 }); }
+    p.ghostT -= dt; if (p.ghostT <= 0) { p.ghostT = .025; p.ghosts.push({ x: p.x, y: p.y, a: p.aim, life: .22 }); if (p.ghosts.length === 4) dashFx(p.cos.dash, p.x, p.y); }
   } else { const a = Math.min(1, dt * 14); p.vx = lerp(p.vx, p.moving ? mx * speed : 0, a); p.vy = lerp(p.vy, p.moving ? my * speed : 0, a); }
   p.x += p.vx * dt; p.y += p.vy * dt; collideWorld(p);
   if (p.moving || p.dashT > 0) p.walk += dt * hyp(p.vx, p.vy) * .06;
@@ -120,6 +120,10 @@ function updateBullets(dt) {
       }
     }
     if (!b.dead && b.life <= 0) { b.dead = true; if (b.explode) explode(b.x, b.y, b.explode, b.dmg, 'player', '#ff8a3d', false, b.remote); }
+    if (b.tr && b.tr.spark && !b.dead && Math.random() < dt * 30) {
+      if (b.tr.star || b.tr.leaf) part({ x: b.x, y: b.y, vx: rand(-30, 30), vy: rand(-30, 30), life: .5, size: rand(4, 6), color: b.tr.spark, type: 'shape', shape: b.tr.star ? 'star' : 'leaf', drag: 2, rot: rand(0, 6), vr: rand(-5, 5) });
+      else part({ x: b.x, y: b.y, vx: rand(-40, 40), vy: rand(-40, 40), life: .3, size: 5, color: b.tr.spark, type: 'dot' });
+    }
     if (b.rocket && !b.dead && Math.random() < .7) part({ x: b.x - b.vx * .02, y: b.y - b.vy * .02, vx: rand(-20, 20), vy: rand(-20, 20), life: .5, size: 8, color: '#55505a', type: 'smoke', grow: 30 });
   }
   G.pb = G.pb.filter(b => !b.dead);
@@ -225,6 +229,19 @@ function updateWorld(dt) {
   }
 }
 
+// zwierzaki podążają za właścicielem
+function petFollow(o, owner, dt, i) {
+  if (!o.pet) o.pet = { x: owner.x - 30, y: owner.y - 30, t: rand(0, 6) };
+  const pe = o.pet; pe.t += dt;
+  const side = Math.cos(owner.aim + Math.PI) * 34 + Math.cos(owner.aim + Math.PI / 2) * 22, sideY = Math.sin(owner.aim + Math.PI) * 34 + Math.sin(owner.aim + Math.PI / 2) * 22;
+  const tx = owner.x + side + Math.cos(pe.t * 1.3) * 8, ty = owner.y + sideY + Math.sin(pe.t * 1.7) * 6;
+  const k = Math.min(1, dt * 4); pe.x = lerp(pe.x, tx, k); pe.y = lerp(pe.y, ty, k);
+}
+function updatePets(dt) {
+  const p = G.player;
+  if (p && !p.dead && p.cos.pet !== 'pe_none') petFollow(p, p, dt);
+  for (const r of G.remotes.values()) if (!r.dead && r.cos && r.cos.pet && r.cos.pet !== 'pe_none') petFollow(r, r, dt);
+}
 function updateCamera(dt) {
   const c = G.cam, p = G.player;
   c.z = clamp(Math.min(W / 840, H / 470), .5, 1.7);
@@ -254,6 +271,7 @@ function update(dt) {
     if (G.mode === 'pvp') pvpCheck();
   }
   updateWorld(dt);
+  if (!G.demo) updatePets(dt);
   updateCamera(dt);
   if (G.banner) { G.banner.t -= dt; if (G.banner.t <= 0) G.banner = null; }
   if (G.over) G.overT += dt / Math.max(.3, G.slow);

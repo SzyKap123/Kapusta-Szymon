@@ -27,29 +27,42 @@ function drawWeapon(g, id) {
     g.fillStyle = '#12161c'; g.beginPath(); g.arc(40, 0, 3.5, 0, TAU); g.fill();
   }
 }
-function sprPlayer(wid, hero) {
-  const H = HEROES[hero] || HEROES.assault, A = H.armor, V = H.visor;
+function normLook(look) {
+  if (typeof look === 'string') look = { hero: look };
+  return { hero: HEROES[look.hero] ? look.hero : 'assault', skin: COS[look.skin] ? look.skin : 'sk_def', visor: COS[look.visor] ? look.visor : 'vi_def', hat: COS[look.hat] ? look.hat : 'ht_none' };
+}
+function sprPlayer(wid, look) {
+  const L = normLook(look), hero = L.hero, H = HEROES[hero], sk = COS[L.skin], vi = COS[L.visor], hat = COS[L.hat].kind;
+  const A = sk.pal || H.armor, V = vi.col || H.visor;
   return sprite(100, 100, g => {
     const ink = '#0b1018';
+    const visorFill = (y0, y1) => vi.grad ? LG(g, 0, y0, 0, y1, vi.grad.map((c, i) => [i / (vi.grad.length - 1), c])) : V;
+    drawHat(g, hat, true);
     // plecak
     g.fillStyle = LG(g, -20, -10, -8, 10, [[0, '#3a4658'], [1, '#1a212c']]); rrect(g, -21, -11, 13, 22, 4); g.fill(); g.lineWidth = 1.8; g.strokeStyle = ink; g.stroke();
-    g.fillStyle = V; g.fillRect(-19, -6, 2.5, 12);
+    g.fillStyle = visorFill(-6, 6); g.fillRect(-19, -6, 2.5, 12);
     // barki
-    g.fillStyle = LG(g, -8, -16, 8, 16, [[0, A[0]], [.55, A[1]], [1, A[2]]]); ell(g, -1, 0, 11, 16.5); g.fill(); g.lineWidth = 2; g.stroke();
-    g.strokeStyle = V; g.lineWidth = 2; g.beginPath(); g.arc(-1, 0, 13, -1.9, -1.2); g.stroke(); g.beginPath(); g.arc(-1, 0, 13, 1.2, 1.9); g.stroke();
+    g.fillStyle = LG(g, -8, -16, 8, 16, [[0, A[0]], [.55, A[1]], [1, A[2]]]); ell(g, -1, 0, 11, 16.5); g.fill();
+    if (sk.pat && sk.pat !== 'none') { g.save(); ell(g, -1, 0, 11, 16.5); g.clip(); drawSkinPattern(g, sk); g.restore(); }
+    g.lineWidth = 2; g.strokeStyle = ink; ell(g, -1, 0, 11, 16.5); g.stroke();
+    g.strokeStyle = visorFill(-14, 14); g.lineWidth = 2; g.beginPath(); g.arc(-1, 0, 13, -1.9, -1.2); g.stroke(); g.beginPath(); g.arc(-1, 0, 13, 1.2, 1.9); g.stroke();
     // ręce
     g.strokeStyle = ink; g.lineWidth = 7.5; g.beginPath(); g.moveTo(0, -12); g.lineTo(12, -2); g.moveTo(0, 12); g.lineTo(11, 5); g.stroke();
-    g.strokeStyle = '#c3d0e2'; g.lineWidth = 5; g.beginPath(); g.moveTo(0, -12); g.lineTo(12, -2); g.moveTo(0, 12); g.lineTo(11, 5); g.stroke();
+    g.strokeStyle = sk.pal ? A[1] : '#c3d0e2'; g.lineWidth = 5; g.beginPath(); g.moveTo(0, -12); g.lineTo(12, -2); g.moveTo(0, 12); g.lineTo(11, 5); g.stroke();
     g.save(); g.translate(2, 3); drawWeapon(g, wid); g.restore();
     g.fillStyle = '#2a3344'; g.beginPath(); g.arc(12, -2, 3, 0, TAU); g.arc(11, 5, 3, 0, TAU); g.fill();
     // hełm
-    g.fillStyle = RG(g, -2, -4, 1, 1, 0, 11, [[0, '#ffffff'], [.5, '#c9d6e8'], [1, '#55627a']]); g.beginPath(); g.arc(1, 0, 10.5, 0, TAU); g.fill(); g.lineWidth = 2; g.strokeStyle = ink; g.stroke();
+    const hc = sk.pal ? [A[0], A[1], A[2]] : ['#ffffff', '#c9d6e8', '#55627a'];
+    g.fillStyle = RG(g, -2, -4, 1, 1, 0, 11, [[0, hc[0]], [.5, hc[1]], [1, hc[2]]]); g.beginPath(); g.arc(1, 0, 10.5, 0, TAU); g.fill(); g.lineWidth = 2; g.strokeStyle = ink; g.stroke();
     g.strokeStyle = '#0e2a33'; g.lineWidth = 6; g.beginPath(); g.arc(1, 0, 7.5, -1, 1); g.stroke();
-    g.strokeStyle = V; g.lineWidth = 3.6; g.beginPath(); g.arc(1, 0, 7.5, -.95, .95); g.stroke();
+    g.strokeStyle = visorFill(-7, 7); g.lineWidth = 3.6; g.beginPath(); g.arc(1, 0, 7.5, -.95, .95); g.stroke();
     g.strokeStyle = 'rgba(255,255,255,.85)'; g.lineWidth = 1.2; g.beginPath(); g.arc(1, 0, 8.2, -.8, -.3); g.stroke();
-    g.fillStyle = V; g.fillRect(-7, -1, 5, 2);
-    if (hero === 'medic') { g.fillStyle = '#ff4d6d'; g.fillRect(-6, -9, 2, 6); g.fillRect(-8, -7, 6, 2); }
-    if (hero === 'engineer') { g.fillStyle = '#2a2a2a'; g.fillRect(-4, -12, 6, 3); }
+    g.fillStyle = visorFill(-1, 1); g.fillRect(-7, -1, 5, 2);
+    if (hat === 'none') {
+      if (hero === 'medic') { g.fillStyle = '#ff4d6d'; g.fillRect(-6, -9, 2, 6); g.fillRect(-8, -7, 6, 2); }
+      if (hero === 'engineer') { g.fillStyle = '#2a2a2a'; g.fillRect(-4, -12, 6, 3); }
+    }
+    drawHat(g, hat, false);
   });
 }
 function shade(g, cx, cy, r, c0, c1, c2) { return RG(g, cx - r * .35, cy - r * .4, r * .05, cx, cy, r, [[0, c0], [.55, c1], [1, c2]]); }
@@ -190,7 +203,8 @@ function buildSprites(bi) {
   return s;
 }
 const PSPR = {};
-function playerSpr(hero, wid) { const k = hero + ':' + wid; return PSPR[k] || (PSPR[k] = sprPlayer(wid, hero)); }
+function playerSpr(look, wid) { const L = normLook(look), k = L.hero + ':' + L.skin + ':' + L.visor + ':' + L.hat + ':' + wid; return PSPR[k] || (PSPR[k] = sprPlayer(wid, L)); }
+function heroVisor(look) { const L = normLook(look), v = COS[L.visor]; return v.col || HEROES[L.hero].visor; }
 function sprTurret() {
   return sprite(60, 60, g => {
     const ink = '#0b1018';
