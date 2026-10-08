@@ -196,7 +196,7 @@ function updateWorld(dt) {
         if (k.type === 'xp') { addXp(k.v); sfx('xp'); }
         else if (k.type === 'coin') { G.coins += k.v; sfx('coin'); }
         else if (k.type === 'hp') { healPlayer(k.v); sfx('heal'); }
-        else if (k.type === 'gren') { p.grenades++; pop(p.x, p.y - 34, '+1 granat', '#ffb627', 14); sfx('heal'); }
+        else if (k.type === 'gren') { p.grenades++; pop(p.x, p.y - 34, '+1 grenade', '#ffb627', 14); sfx('heal'); }
       }
       if (k.life <= 0) k.dead = true;
     }

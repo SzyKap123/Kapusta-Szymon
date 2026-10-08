@@ -198,7 +198,7 @@ function throwGrenade() {
 function useAbility() {
   const p = G.player; if (!pAlive() || p.abCD > 0 || G.over) return;
   const H = HEROES[p.hero]; p.abCD = H.cd;
-  if (p.hero === 'assault') { p.fury = 6; flash(p.x, p.y, 260, '#ff6b3d', .4); sparks(p.x, p.y, '#ffb627', 20, 300); sfx('lvl'); pop(p.x, p.y - 40, 'FURIA!', '#ffb627', 20); }
+  if (p.hero === 'assault') { p.fury = 6; flash(p.x, p.y, 260, '#ff6b3d', .4); sparks(p.x, p.y, '#ffb627', 20, 300); sfx('lvl'); pop(p.x, p.y - 40, 'FURY!', '#ffb627', 20); }
   else if (p.hero === 'engineer') {
     const x = clamp(p.x + Math.cos(p.aim) * 40, M + 20, WW - M - 20), y = clamp(p.y + Math.sin(p.aim) * 40, M + 20, WH - M - 20);
     placeTurret(x, y, true); if (G.net) G.net.event(['t', Math.round(x), Math.round(y)]);
@@ -218,6 +218,8 @@ function hurtPlayer(dmg, raw, src) {
   const p = G.player; if (!pAlive() || G.over) return;
   if (!raw && (p.inv > 0 || p.dashT > 0)) return;
   for (const f of G.fields) if (hyp(f.x - p.x, f.y - p.y) < f.r) { dmg *= .45; break; }
+  if (G.mode !== 'pvp') dmg *= DIFF().dmg;
+  if (!raw && save.settings.vibe && navigator.vibrate) { try { navigator.vibrate(dmg > 15 ? 60 : 25); } catch (e) {} }
   p.hp -= dmg; p.lastHurtT = G.t; G.hurtV = Math.min(1, G.hurtV + (raw ? .15 : .7));
   if (src) p.lastHit = src;
   if (!raw) { if (G.mode !== 'pvp') p.inv = .55; G.shake = Math.max(G.shake, 7); sfx('hurt'); pop(p.x, p.y - 30, '-' + Math.round(dmg), '#ff4d6d', 17); }
@@ -228,7 +230,7 @@ function playerDie() {
   p.hp = 0; p.dead = true; save.stats.deaths++;
   gibs(p.x, p.y, ['#c9d6e8', HEROES[p.hero].visor, '#5b6a84'], 26, 320); flash(p.x, p.y, 300, HEROES[p.hero].visor, .5); smoke(p.x, p.y, 10, '#2a3040', 30);
   if (G.mode === 'pvp') { G.pvp.deaths++; p.respawnT = 3; if (G.net) G.net.died(p.lastHit); sfx('hurt'); }
-  else if (G.mode === 'coop') { p.respawnT = 10; sfx('lose'); G.banner = { title: 'Zostałeś pokonany', sub: 'Odrodzisz się za 10 s, jeśli drużyna przetrwa', t: 3, max: 3 }; }
+  else if (G.mode === 'coop') { p.respawnT = 10; sfx('lose'); G.banner = { title: 'You were taken down', sub: 'You respawn in 10 s if your team survives', t: 3, max: 3 }; }
   else { G.over = 'lose'; G.overT = 0; G.slow = .3; sfx('lose'); }
 }
 function respawnPlayer() {
@@ -371,7 +373,7 @@ function openPortal(type, x, y, boss) {
   sfx('portal');
 }
 function mkEnemy(type, x, y) {
-  const d = EDEF[type], hp = d.hp * (d.boss ? (1 + G.li * .04) * (G.endless ? .8 + G.wave * .04 : 1) : G.hpMul) * (G.net && G.net.host ? 1 + .45 * G.remotes.size : 1);
+  const d = EDEF[type], hp = d.hp * (d.boss ? (1 + G.li * .04) * (G.endless ? .8 + G.wave * .04 : 1) : G.hpMul) * (G.net && G.net.host ? 1 + .45 * G.remotes.size : 1) * DIFF().hp;
   return { id: ++eid, type, d, x, y, vx: 0, vy: 0, kx: 0, ky: 0, r: d.r, hp, maxHp: hp, ang: 0, t: 0, walk: rand(0, 6),
     flash: 0, cd: rand(1.2, 2.2), st: 'move', stT: 0, touchCD: 0, burn: 0, burnT: 0, burnLv: 0, orbCD: 0, hb: 0, strafe: Math.random() < .5 ? 1 : -1, strafeT: rand(1, 3),
     pi: -1, pat: null, patT: 0, el: 0, z: 0, spin: 0, dead: false };
@@ -412,7 +414,7 @@ function updateWaves(dt) {
       G.queue = []; G.waveDelay = 2;
     } else {
       G.queue = shuffle(survivalWave(n)); G.spawnT = .8; G.waveDelay = 1.6;
-      G.banner = { title: 'Fala ' + (n + 1), sub: G.queue.length + ' wrogów nadciąga', t: 2.2, max: 2.2 };
+      G.banner = { title: 'Wave ' + (n + 1), sub: G.queue.length + ' enemies incoming', t: 2.2, max: 2.2 };
     }
     if (n > 0) { G.score += 100 * n; healPlayer(10); }
     return;
@@ -421,7 +423,7 @@ function updateWaves(dt) {
     let q = G.waves[G.wave].slice();
     if (G.net && G.net.host) { const extra = Math.round(q.length * .5 * G.remotes.size); for (let i = 0; i < extra; i++) q.push(pick(q)); }
     G.queue = shuffle(q); G.spawnT = .8; G.waveDelay = 1.6;
-    G.banner = { title: 'Fala ' + (G.wave + 1) + ' / ' + G.waves.length, sub: G.queue.length + ' wrogów nadciąga', t: 2.2, max: 2.2 };
+    G.banner = { title: 'Wave ' + (G.wave + 1) + ' / ' + G.waves.length, sub: G.queue.length + ' enemies incoming', t: 2.2, max: 2.2 };
   } else if (G.L.boss && !G.bossSpawned) {
     G.bossSpawned = true; spawnBoss(BOSS_OF[G.bi]);
   } else win();
@@ -431,7 +433,7 @@ function spawnBoss(type) {
   let x = WW / 2, y = WH / 2; const a = Math.atan2(WH / 2 - p.y, WW / 2 - p.x);
   for (let k = 0; k < 30; k++) { x = clamp(p.x + Math.cos(a + rand(-1, 1)) * 420, M + 90, WW - M - 90); y = clamp(p.y + Math.sin(a + rand(-1, 1)) * 420, M + 90, WH - M - 90); if (freeSpot(x, y, 70)) break; }
   openPortal(type, x, y, true);
-  G.banner = { title: EDEF[type].name, sub: 'Boss nadchodzi', t: 3, max: 3, boss: true };
+  G.banner = { title: EDEF[type].name, sub: 'Boss incoming', t: 3, max: 3, boss: true };
   if (G.net && G.net.host) G.net.event(['b', type]);
   sfx('roar'); G.shake = 10; music.intense = 1;
 }

@@ -1,121 +1,121 @@
 'use strict';
 // ================= Kosmetyki: katalog, skrzynie, odłamki =================
 const RAR = {
-  c: { name: 'Zwykły', col: '#a9b8cc', w: 60, shard: 25, dup: 5 },
-  r: { name: 'Rzadki', col: '#3ea0ff', w: 27, shard: 70, dup: 15 },
-  e: { name: 'Epicki', col: '#b45cff', w: 10, shard: 200, dup: 40 },
-  l: { name: 'Legendarny', col: '#ffb627', w: 2.6, shard: 550, dup: 110 },
-  m: { name: 'Mityczny', col: '#ff4d6d', w: .4, shard: 1300, dup: 260 }
+  c: { name: 'Common', col: '#a9b8cc', w: 60, shard: 25, dup: 5 },
+  r: { name: 'Rare', col: '#3ea0ff', w: 27, shard: 70, dup: 15 },
+  e: { name: 'Epic', col: '#b45cff', w: 10, shard: 200, dup: 40 },
+  l: { name: 'Legendary', col: '#ffb627', w: 2.6, shard: 550, dup: 110 },
+  m: { name: 'Mythic', col: '#ff4d6d', w: .4, shard: 1300, dup: 260 }
 };
 const RAR_KEYS = ['c', 'r', 'e', 'l', 'm'];
 const COS_CATS = {
-  skin: 'Pancerze', visor: 'Wizjery', hat: 'Nakrycia głowy', trail: 'Ślady pocisków', dash: 'Efekty zrywu', kill: 'Efekty eliminacji', pet: 'Zwierzaki', title: 'Tytuły'
+  skin: 'Armor', visor: 'Visors', hat: 'Headgear', trail: 'Bullet Trails', dash: 'Dash Effects', kill: 'Kill Effects', pet: 'Pets', title: 'Titles'
 };
 const COS = {}, COS_LIST = [];
 function addCos(cat, id, name, r, extra) { const it = Object.assign({ cat, id, name, r }, extra || {}); COS[id] = it; COS_LIST.push(it); }
 // --- pancerze: [jasny, średni, ciemny, akcent], wzór
 [
-  ['sk_def', 'Standardowy', 'c', null, 'none', { def: true }],
-  ['sk_grey', 'Szary rekrut', 'c', ['#e2e7ee', '#9aa4b2', '#4a5566', '#c8d0da'], 'none'],
-  ['sk_sand', 'Piaskowy', 'c', ['#f4e3bc', '#c9a970', '#76592e', '#e8cf98'], 'none'],
-  ['sk_forest', 'Leśny', 'c', ['#b8dcae', '#5e9454', '#28472a', '#88c07a'], 'none'],
-  ['sk_navy', 'Granatowy', 'c', ['#b4c8ee', '#4a6aa8', '#18284f', '#7a9ad8'], 'none'],
-  ['sk_brick', 'Ceglasty', 'c', ['#f6c0b0', '#c4644a', '#5e2414', '#e89478'], 'none'],
-  ['sk_olive', 'Oliwkowy', 'c', ['#dfe2b0', '#8f9446', '#3e4214', '#bcc070'], 'none'],
-  ['sk_graph', 'Grafitowy', 'c', ['#9aa0aa', '#4a4f58', '#1a1d22', '#70767f'], 'none'],
-  ['sk_milk', 'Mleczny', 'c', ['#ffffff', '#e4e8ee', '#9aa4b2', '#f6f8fb'], 'trim'],
-  ['sk_camoj', 'Kamuflaż dżungli', 'r', ['#9cc488', '#4e7a3a', '#22381a', '#2e4a20'], 'camo'],
-  ['sk_camod', 'Kamuflaż pustyni', 'r', ['#f0dcae', '#c49c62', '#6e5028', '#9a7a48'], 'camo'],
-  ['sk_camow', 'Kamuflaż zimowy', 'r', ['#ffffff', '#cfd8e2', '#7a8696', '#9aa6b6'], 'camo'],
-  ['sk_tiger', 'Tygrys', 'r', ['#ffc070', '#f08a20', '#7a3a08', '#1a1008'], 'tiger'],
+  ['sk_def', 'Standard', 'c', null, 'none', { def: true }],
+  ['sk_grey', 'Grey Recruit', 'c', ['#e2e7ee', '#9aa4b2', '#4a5566', '#c8d0da'], 'none'],
+  ['sk_sand', 'Desert Sand', 'c', ['#f4e3bc', '#c9a970', '#76592e', '#e8cf98'], 'none'],
+  ['sk_forest', 'Forest', 'c', ['#b8dcae', '#5e9454', '#28472a', '#88c07a'], 'none'],
+  ['sk_navy', 'Navy', 'c', ['#b4c8ee', '#4a6aa8', '#18284f', '#7a9ad8'], 'none'],
+  ['sk_brick', 'Brick', 'c', ['#f6c0b0', '#c4644a', '#5e2414', '#e89478'], 'none'],
+  ['sk_olive', 'Olive', 'c', ['#dfe2b0', '#8f9446', '#3e4214', '#bcc070'], 'none'],
+  ['sk_graph', 'Graphite', 'c', ['#9aa0aa', '#4a4f58', '#1a1d22', '#70767f'], 'none'],
+  ['sk_milk', 'Porcelain', 'c', ['#ffffff', '#e4e8ee', '#9aa4b2', '#f6f8fb'], 'trim'],
+  ['sk_camoj', 'Jungle Camo', 'r', ['#9cc488', '#4e7a3a', '#22381a', '#2e4a20'], 'camo'],
+  ['sk_camod', 'Desert Camo', 'r', ['#f0dcae', '#c49c62', '#6e5028', '#9a7a48'], 'camo'],
+  ['sk_camow', 'Winter Camo', 'r', ['#ffffff', '#cfd8e2', '#7a8696', '#9aa6b6'], 'camo'],
+  ['sk_tiger', 'Tiger', 'r', ['#ffc070', '#f08a20', '#7a3a08', '#1a1008'], 'tiger'],
   ['sk_zebra', 'Zebra', 'r', ['#ffffff', '#e8e8e8', '#7a7a7a', '#141414'], 'tiger'],
-  ['sk_carbon', 'Włókno węglowe', 'r', ['#6a707a', '#2a2e36', '#0e1014', '#3a404a'], 'carbon'],
-  ['sk_dots', 'Retro kropki', 'r', ['#ffd0e0', '#ff7aa8', '#8a1a48', '#ffffff'], 'dots'],
-  ['sk_honey', 'Plaster miodu', 'r', ['#ffe08a', '#f0a820', '#7a4a08', '#8a5a10'], 'hex'],
-  ['sk_hazard', 'Strefa zagrożenia', 'e', ['#ffe14d', '#e8b400', '#5a4400', '#141414'], 'hazard'],
-  ['sk_neon', 'Neonowy róż', 'e', ['#3a1a3a', '#24102a', '#0e0612', '#ff4dd8'], 'neon'],
-  ['sk_toxic', 'Toksyk', 'e', ['#2a3a14', '#18240a', '#080e04', '#a6ff2e'], 'neon'],
-  ['sk_flame', 'Płomień', 'e', ['#4a1a10', '#2a0e08', '#120404', '#ff8a1a'], 'flames'],
-  ['sk_storm', 'Burza', 'e', ['#4a5a7a', '#28324a', '#10141e', '#9ae8ff'], 'bolt'],
-  ['sk_ice', 'Lodowy kryształ', 'e', ['#ffffff', '#aee8ff', '#3a8ac0', '#e8fbff'], 'ice'],
-  ['sk_blood', 'Krwawy księżyc', 'e', ['#ff8a8a', '#b4142e', '#3a040e', '#ffd0d0'], 'trim'],
-  ['sk_ocean', 'Oceaniczny', 'e', ['#a0fff0', '#1ab8c8', '#063a5a', '#e0fffa'], 'waves'],
-  ['sk_gold', 'Złoty wojownik', 'l', ['#fff6c4', '#ffc93c', '#8a5a08', '#fff'], 'gold'],
-  ['sk_chrome', 'Chrom', 'l', ['#ffffff', '#b8c4d4', '#3a4454', '#fff'], 'chrome'],
-  ['sk_galaxy', 'Galaktyka', 'l', ['#5a3aa8', '#2a1a5a', '#0a0620', '#ffffff'], 'stars'],
-  ['sk_lava', 'Obsydian i lawa', 'l', ['#3a2a2a', '#1a1010', '#060202', '#ffb000'], 'lava'],
-  ['sk_rainbow', 'Tęczowy pryzmat', 'm', ['#ffffff', '#ff8ad8', '#5a3aa8', '#fff'], 'rainbow'],
-  ['sk_void', 'Pustka', 'm', ['#2a1a3a', '#0e0614', '#000000', '#c77dff'], 'void'],
-  ['sk_cabbage', 'Kapusta królewska', 'm', ['#d8ffb0', '#6ac84a', '#1e5a1a', '#f4ffe0'], 'cabbage'],
-  ['sk_boss', 'Łuska Królowej', 'l', ['#d4f58a', '#7cc63f', '#2c5418', '#b45cff'], 'hex', { src: 'boss1' }],
-  ['sk_vet', 'Weteran Strefy', 'l', ['#e8e0c8', '#8a7a5a', '#3a3020', '#ffb627'], 'stripes', { src: 'k1000' }]
+  ['sk_carbon', 'Carbon Fiber', 'r', ['#6a707a', '#2a2e36', '#0e1014', '#3a404a'], 'carbon'],
+  ['sk_dots', 'Retro Dots', 'r', ['#ffd0e0', '#ff7aa8', '#8a1a48', '#ffffff'], 'dots'],
+  ['sk_honey', 'Honeycomb', 'r', ['#ffe08a', '#f0a820', '#7a4a08', '#8a5a10'], 'hex'],
+  ['sk_hazard', 'Hazard Zone', 'e', ['#ffe14d', '#e8b400', '#5a4400', '#141414'], 'hazard'],
+  ['sk_neon', 'Neon Pink', 'e', ['#3a1a3a', '#24102a', '#0e0612', '#ff4dd8'], 'neon'],
+  ['sk_toxic', 'Toxic', 'e', ['#2a3a14', '#18240a', '#080e04', '#a6ff2e'], 'neon'],
+  ['sk_flame', 'Hellfire', 'e', ['#4a1a10', '#2a0e08', '#120404', '#ff8a1a'], 'flames'],
+  ['sk_storm', 'Thunderstorm', 'e', ['#4a5a7a', '#28324a', '#10141e', '#9ae8ff'], 'bolt'],
+  ['sk_ice', 'Ice Crystal', 'e', ['#ffffff', '#aee8ff', '#3a8ac0', '#e8fbff'], 'ice'],
+  ['sk_blood', 'Blood Moon', 'e', ['#ff8a8a', '#b4142e', '#3a040e', '#ffd0d0'], 'trim'],
+  ['sk_ocean', 'Ocean', 'e', ['#a0fff0', '#1ab8c8', '#063a5a', '#e0fffa'], 'waves'],
+  ['sk_gold', 'Golden Warrior', 'l', ['#fff6c4', '#ffc93c', '#8a5a08', '#fff'], 'gold'],
+  ['sk_chrome', 'Chrome', 'l', ['#ffffff', '#b8c4d4', '#3a4454', '#fff'], 'chrome'],
+  ['sk_galaxy', 'Galaxy', 'l', ['#5a3aa8', '#2a1a5a', '#0a0620', '#ffffff'], 'stars'],
+  ['sk_lava', 'Obsidian Lava', 'l', ['#3a2a2a', '#1a1010', '#060202', '#ffb000'], 'lava'],
+  ['sk_rainbow', 'Prism', 'm', ['#ffffff', '#ff8ad8', '#5a3aa8', '#fff'], 'rainbow'],
+  ['sk_void', 'The Void', 'm', ['#2a1a3a', '#0e0614', '#000000', '#c77dff'], 'void'],
+  ['sk_cabbage', 'Royal Cabbage', 'm', ['#d8ffb0', '#6ac84a', '#1e5a1a', '#f4ffe0'], 'cabbage'],
+  ['sk_boss', 'Queen Scale', 'l', ['#d4f58a', '#7cc63f', '#2c5418', '#b45cff'], 'hex', { src: 'boss1' }],
+  ['sk_vet', 'Zone Veteran', 'l', ['#e8e0c8', '#8a7a5a', '#3a3020', '#ffb627'], 'stripes', { src: 'k1000' }]
 ].forEach(([id, n, r, pal, pat, ex]) => addCos('skin', id, n, r, Object.assign({ pal, pat }, ex || {})));
 // --- wizjery
 [
-  ['vi_def', 'Bohatera', 'c', null, { def: true }], ['vi_white', 'Biały', 'c', '#ffffff'], ['vi_green', 'Zielony', 'c', '#5dff8a'], ['vi_yellow', 'Żółty', 'c', '#ffe14d'],
-  ['vi_red', 'Czerwony', 'r', '#ff3d5a'], ['vi_orange', 'Pomarańczowy', 'r', '#ff8a1a'], ['vi_purple', 'Fioletowy', 'r', '#b45cff'], ['vi_pink', 'Różowy', 'r', '#ff6ad8'],
-  ['vi_gold', 'Złoty', 'e', '#ffc93c', { grad: ['#fff6c4', '#ffb000'] }], ['vi_lime', 'Neonowa limonka', 'e', '#b6ff2e', { grad: ['#efffb0', '#6ad800'] }], ['vi_frost', 'Szron', 'e', '#9ae8ff', { grad: ['#ffffff', '#3ec9ff'] }],
-  ['vi_rainbow', 'Tęczowy', 'l', '#ff8ad8', { grad: ['#ff4d6d', '#ffe14d', '#5dff8a', '#3ef0ff', '#b45cff'] }], ['vi_fire', 'Ognisty', 'l', '#ff8a1a', { grad: ['#fff2a0', '#ff8a1a', '#ff2a1a'] }],
-  ['vi_void', 'Czarna dziura', 'm', '#c77dff', { grad: ['#000000', '#2a0a3a', '#c77dff'] }]
+  ['vi_def', 'Hero Default', 'c', null, { def: true }], ['vi_white', 'White', 'c', '#ffffff'], ['vi_green', 'Green', 'c', '#5dff8a'], ['vi_yellow', 'Yellow', 'c', '#ffe14d'],
+  ['vi_red', 'Red', 'r', '#ff3d5a'], ['vi_orange', 'Orange', 'r', '#ff8a1a'], ['vi_purple', 'Purple', 'r', '#b45cff'], ['vi_pink', 'Pink', 'r', '#ff6ad8'],
+  ['vi_gold', 'Gold', 'e', '#ffc93c', { grad: ['#fff6c4', '#ffb000'] }], ['vi_lime', 'Neon Lime', 'e', '#b6ff2e', { grad: ['#efffb0', '#6ad800'] }], ['vi_frost', 'Frost', 'e', '#9ae8ff', { grad: ['#ffffff', '#3ec9ff'] }],
+  ['vi_rainbow', 'Rainbow', 'l', '#ff8ad8', { grad: ['#ff4d6d', '#ffe14d', '#5dff8a', '#3ef0ff', '#b45cff'] }], ['vi_fire', 'Inferno', 'l', '#ff8a1a', { grad: ['#fff2a0', '#ff8a1a', '#ff2a1a'] }],
+  ['vi_void', 'Black Hole', 'm', '#c77dff', { grad: ['#000000', '#2a0a3a', '#c77dff'] }]
 ].forEach(([id, n, r, col, ex]) => addCos('visor', id, n, r, Object.assign({ col }, ex || {})));
 // --- nakrycia głowy
 [
-  ['ht_none', 'Brak', 'c', 'none', { def: true }], ['ht_cap', 'Czapka z daszkiem', 'c', 'cap'], ['ht_band', 'Opaska', 'c', 'band'], ['ht_ant', 'Antenka', 'c', 'antenna'], ['ht_bandana', 'Bandana', 'c', 'bandana'],
-  ['ht_mohawk', 'Irokez', 'r', 'mohawk'], ['ht_viking', 'Rogi wikinga', 'r', 'viking'], ['ht_cat', 'Kocie uszy', 'r', 'cat'], ['ht_phones', 'Słuchawki', 'r', 'phones'], ['ht_cowboy', 'Kowbojski kapelusz', 'r', 'cowboy'], ['ht_top', 'Cylinder', 'r', 'tophat'],
-  ['ht_crown', 'Korona', 'e', 'crown'], ['ht_halo', 'Aureola', 'e', 'halo'], ['ht_santa', 'Czapka Mikołaja', 'e', 'santa'], ['ht_devil', 'Diabelskie rogi', 'e', 'devil'], ['ht_wizard', 'Kapelusz czarodzieja', 'e', 'wizard'], ['ht_party', 'Czapeczka imprezowa', 'e', 'party'],
-  ['ht_fire', 'Płonąca korona', 'l', 'firecrown'], ['ht_wings', 'Skrzydła anioła', 'l', 'wings'], ['ht_laurel', 'Złote laury', 'l', 'laurel'],
-  ['ht_cabbage', 'Kapuściana głowa', 'm', 'cabbage'], ['ht_space', 'Kosmiczny klosz', 'm', 'space'],
-  ['ht_skull', 'Czaszka bossa', 'l', 'skullh', { src: 'boss3' }]
+  ['ht_none', 'None', 'c', 'none', { def: true }], ['ht_cap', 'Baseball Cap', 'c', 'cap'], ['ht_band', 'Headband', 'c', 'band'], ['ht_ant', 'Antenna', 'c', 'antenna'], ['ht_bandana', 'Bandana', 'c', 'bandana'],
+  ['ht_mohawk', 'Mohawk', 'r', 'mohawk'], ['ht_viking', 'Viking Horns', 'r', 'viking'], ['ht_cat', 'Cat Ears', 'r', 'cat'], ['ht_phones', 'Headphones', 'r', 'phones'], ['ht_cowboy', 'Cowboy Hat', 'r', 'cowboy'], ['ht_top', 'Top Hat', 'r', 'tophat'],
+  ['ht_crown', 'Crown', 'e', 'crown'], ['ht_halo', 'Halo', 'e', 'halo'], ['ht_santa', 'Santa Hat', 'e', 'santa'], ['ht_devil', 'Devil Horns', 'e', 'devil'], ['ht_wizard', 'Wizard Hat', 'e', 'wizard'], ['ht_party', 'Party Hat', 'e', 'party'],
+  ['ht_fire', 'Blazing Crown', 'l', 'firecrown'], ['ht_wings', 'Angel Wings', 'l', 'wings'], ['ht_laurel', 'Golden Laurels', 'l', 'laurel'],
+  ['ht_cabbage', 'Cabbage Head', 'm', 'cabbage'], ['ht_space', 'Space Dome', 'm', 'space'],
+  ['ht_skull', 'Boss Skull', 'l', 'skullh', { src: 'boss3' }]
 ].forEach(([id, n, r, kind, ex]) => addCos('hat', id, n, r, Object.assign({ kind }, ex || {})));
 // --- ślady pocisków
 [
-  ['tr_def', 'Kolor broni', 'c', null, { def: true }], ['tr_white', 'Biały', 'c', '#ffffff'], ['tr_green', 'Zielony', 'c', '#5dff8a'], ['tr_blue', 'Niebieski', 'c', '#3ea0ff'],
-  ['tr_red', 'Czerwony', 'r', '#ff3d5a'], ['tr_purple', 'Fioletowy', 'r', '#b45cff'], ['tr_pink', 'Różowy', 'r', '#ff6ad8'], ['tr_gold', 'Złoty', 'r', '#ffc93c'],
-  ['tr_ice', 'Lodowe iskry', 'e', '#9ae8ff', { spark: '#ffffff' }], ['tr_fire', 'Ogniste iskry', 'e', '#ff6a1a', { spark: '#ffd060' }], ['tr_toxic', 'Toksyczny', 'e', '#a6ff2e', { spark: '#e8ff90' }],
-  ['tr_rainbow', 'Tęcza', 'l', '#ff8ad8', { rainbow: true }], ['tr_stars', 'Gwiezdny pył', 'l', '#fff6c4', { spark: '#ffe14d', star: true }],
-  ['tr_void', 'Czarna dziura', 'm', '#c77dff', { spark: '#6a1aff', dark: true }], ['tr_cabbage', 'Kapuściane liście', 'm', '#6ac84a', { spark: '#b8ff7a', leaf: true }]
+  ['tr_def', 'Weapon Color', 'c', null, { def: true }], ['tr_white', 'White', 'c', '#ffffff'], ['tr_green', 'Green', 'c', '#5dff8a'], ['tr_blue', 'Blue', 'c', '#3ea0ff'],
+  ['tr_red', 'Red', 'r', '#ff3d5a'], ['tr_purple', 'Purple', 'r', '#b45cff'], ['tr_pink', 'Pink', 'r', '#ff6ad8'], ['tr_gold', 'Gold', 'r', '#ffc93c'],
+  ['tr_ice', 'Ice Sparks', 'e', '#9ae8ff', { spark: '#ffffff' }], ['tr_fire', 'Fire Sparks', 'e', '#ff6a1a', { spark: '#ffd060' }], ['tr_toxic', 'Toxic', 'e', '#a6ff2e', { spark: '#e8ff90' }],
+  ['tr_rainbow', 'Rainbow', 'l', '#ff8ad8', { rainbow: true }], ['tr_stars', 'Stardust', 'l', '#fff6c4', { spark: '#ffe14d', star: true }],
+  ['tr_void', 'Black Hole', 'm', '#c77dff', { spark: '#6a1aff', dark: true }], ['tr_cabbage', 'Cabbage Leaves', 'm', '#6ac84a', { spark: '#b8ff7a', leaf: true }]
 ].forEach(([id, n, r, col, ex]) => addCos('trail', id, n, r, Object.assign({ col }, ex || {})));
 // --- efekty zrywu
 [
-  ['da_def', 'Standardowy', 'c', 'smoke', '#8aa0c0', { def: true }], ['da_dust', 'Kurz', 'c', 'smoke', '#c8a870'],
-  ['da_spark', 'Iskry', 'r', 'spark', '#ffd28a'], ['da_bubble', 'Bąbelki', 'r', 'ring', '#7fd8ff'],
-  ['da_fire', 'Ogień', 'e', 'fire', '#ff6a1a'], ['da_ice', 'Lód', 'e', 'shape:square', '#bfefff'], ['da_pixel', 'Pikselki', 'e', 'shape:pixel', '#5dff8a'],
-  ['da_bolt', 'Błyskawica', 'l', 'bolt', '#b9a6ff'], ['da_heart', 'Serduszka', 'l', 'shape:heart', '#ff6ad8'],
+  ['da_def', 'Standard', 'c', 'smoke', '#8aa0c0', { def: true }], ['da_dust', 'Dust', 'c', 'smoke', '#c8a870'],
+  ['da_spark', 'Sparks', 'r', 'spark', '#ffd28a'], ['da_bubble', 'Bubbles', 'r', 'ring', '#7fd8ff'],
+  ['da_fire', 'Fire', 'e', 'fire', '#ff6a1a'], ['da_ice', 'Ice', 'e', 'shape:square', '#bfefff'], ['da_pixel', 'Pixels', 'e', 'shape:pixel', '#5dff8a'],
+  ['da_bolt', 'Lightning', 'l', 'bolt', '#b9a6ff'], ['da_heart', 'Hearts', 'l', 'shape:heart', '#ff6ad8'],
   ['da_portal', 'Portal', 'm', 'portal', '#c77dff']
 ].forEach(([id, n, r, fx, col, ex]) => addCos('dash', id, n, r, Object.assign({ fx, col }, ex || {})));
 // --- efekty eliminacji
 [
-  ['ki_none', 'Brak', 'c', 'none', '#ffffff', { def: true }], ['ki_spark', 'Iskry', 'c', 'spark', '#ffd28a'],
-  ['ki_confetti', 'Konfetti', 'r', 'confetti', '#ffffff'], ['ki_smoke', 'Dymek', 'r', 'smoke', '#5a5a6a'],
-  ['ki_hearts', 'Serca', 'e', 'shape:heart', '#ff6ad8'], ['ki_coins', 'Deszcz monet', 'e', 'coins', '#ffc93c'], ['ki_pixel', 'Pikseloza', 'e', 'shape:pixel', '#3ef0ff'],
-  ['ki_bolt', 'Piorun', 'l', 'bolt', '#b9a6ff'], ['ki_fireworks', 'Fajerwerki', 'l', 'fireworks', '#ffe14d'],
-  ['ki_void', 'Czarna dziura', 'm', 'void', '#c77dff'], ['ki_cabbage', 'Kapuściany wybuch', 'm', 'shape:leaf', '#6ac84a'],
-  ['ki_stars', 'Gwiazdki', 'e', 'shape:star', '#ffe14d', { src: 'pvpwin' }]
+  ['ki_none', 'None', 'c', 'none', '#ffffff', { def: true }], ['ki_spark', 'Sparks', 'c', 'spark', '#ffd28a'],
+  ['ki_confetti', 'Confetti', 'r', 'confetti', '#ffffff'], ['ki_smoke', 'Smoke Puff', 'r', 'smoke', '#5a5a6a'],
+  ['ki_hearts', 'Hearts', 'e', 'shape:heart', '#ff6ad8'], ['ki_coins', 'Coin Shower', 'e', 'coins', '#ffc93c'], ['ki_pixel', 'Pixelate', 'e', 'shape:pixel', '#3ef0ff'],
+  ['ki_bolt', 'Thunderbolt', 'l', 'bolt', '#b9a6ff'], ['ki_fireworks', 'Fireworks', 'l', 'fireworks', '#ffe14d'],
+  ['ki_void', 'Black Hole', 'm', 'void', '#c77dff'], ['ki_cabbage', 'Cabbage Blast', 'm', 'shape:leaf', '#6ac84a'],
+  ['ki_stars', 'Starburst', 'e', 'shape:star', '#ffe14d', { src: 'pvpwin' }]
 ].forEach(([id, n, r, fx, col, ex]) => addCos('kill', id, n, r, Object.assign({ fx, col }, ex || {})));
 // --- zwierzaki
 [
-  ['pe_none', 'Brak', 'c', 'none', { def: true }], ['pe_orb', 'Kulka', 'c', 'orb', { col: '#3ef0ff' }],
-  ['pe_cube', 'Kostka', 'r', 'cube', { col: '#ffb627' }], ['pe_drone', 'Mini-dron', 'r', 'drone', { col: '#9aa4b2' }], ['pe_fly', 'Świetlik', 'r', 'firefly', { col: '#c8ff6a' }],
-  ['pe_bat', 'Nietoperz', 'e', 'bat', { col: '#6a4a8a' }], ['pe_jelly', 'Meduza', 'e', 'jelly', { col: '#ff8ad8' }], ['pe_cat', 'Kotodron', 'e', 'catbot', { col: '#e8eef6' }],
-  ['pe_dragon', 'Smoczek', 'l', 'dragon', { col: '#ff6a3d' }], ['pe_ghost', 'Duszek', 'l', 'ghost', { col: '#e8f4ff' }],
-  ['pe_colossus', 'Mini-Kolos', 'm', 'colossus', { col: '#ff8a1a' }], ['pe_cabbage', 'Kapustek', 'm', 'cabbage', { col: '#6ac84a' }],
-  ['pe_star', 'Gwiazdeczka', 'l', 'star', { col: '#ffe14d', src: 'surv25' }]
+  ['pe_none', 'None', 'c', 'none', { def: true }], ['pe_orb', 'Orb', 'c', 'orb', { col: '#3ef0ff' }],
+  ['pe_cube', 'Cube', 'r', 'cube', { col: '#ffb627' }], ['pe_drone', 'Mini Drone', 'r', 'drone', { col: '#9aa4b2' }], ['pe_fly', 'Firefly', 'r', 'firefly', { col: '#c8ff6a' }],
+  ['pe_bat', 'Bat', 'e', 'bat', { col: '#6a4a8a' }], ['pe_jelly', 'Jellyfish', 'e', 'jelly', { col: '#ff8ad8' }], ['pe_cat', 'Cat-Bot', 'e', 'catbot', { col: '#e8eef6' }],
+  ['pe_dragon', 'Baby Dragon', 'l', 'dragon', { col: '#ff6a3d' }], ['pe_ghost', 'Ghostie', 'l', 'ghost', { col: '#e8f4ff' }],
+  ['pe_colossus', 'Mini Colossus', 'm', 'colossus', { col: '#ff8a1a' }], ['pe_cabbage', 'Cabbie', 'm', 'cabbage', { col: '#6ac84a' }],
+  ['pe_star', 'Starlet', 'l', 'star', { col: '#ffe14d', src: 'surv25' }]
 ].forEach(([id, n, r, kind, ex]) => addCos('pet', id, n, r, Object.assign({ kind }, ex || {})));
 // --- tytuły
 [
-  ['ti_rookie', 'Rekrut', 'c', { def: true }], ['ti_private', 'Szeregowy', 'c'], ['ti_cadet', 'Kadet', 'c'], ['ti_scout', 'Zwiadowca', 'c'], ['ti_rookie2', 'Świeżak', 'c'], ['ti_gunner', 'Strzelec', 'c'],
-  ['ti_bugs', 'Pogromca robali', 'r'], ['ti_corporal', 'Kapral chaosu', 'r'], ['ti_dodge', 'Mistrz uników', 'r'], ['ti_barrels', 'Pan beczek', 'r'], ['ti_sniper', 'Snajper z dżungli', 'r'], ['ti_medic', 'Polowy łapiduch', 'r'], ['ti_wrench', 'Złota rączka', 'r'],
-  ['ti_ice', 'Lodowe serce', 'e'], ['ti_lava', 'Król lawy', 'e'], ['ti_storm', 'Burza', 'e'], ['ti_shadow', 'Cień', 'e'], ['ti_hunter', 'Łowca bossów', 'e'], ['ti_tank', 'Chodzący czołg', 'e'], ['ti_lucky', 'Szczęściarz', 'e'],
-  ['ti_legend', 'Legenda Strefy', 'l'], ['ti_immortal', 'Nieśmiertelny', 'l'], ['ti_general', 'Generał', 'l'], ['ti_phantom', 'Widmo', 'l'],
-  ['ti_baron', 'Kapuściany Baron', 'm'], ['ti_zero', 'Pacjent Zero', 'm'], ['ti_god', 'Bóg wojny', 'm'],
-  ['ti_queen', 'Królobójca', 'e', { src: 'boss1' }], ['ti_swarm', 'Pogromca roju', 'l', { src: 'k1000' }], ['ti_perfect', 'Perfekcjonista', 'l', { src: 'stars' }], ['ti_glad', 'Gladiator', 'e', { src: 'pvp10' }], ['ti_team', 'Brat broni', 'e', { src: 'coop' }], ['ti_pyro', 'Piroman', 'r', { src: 'barrels' }]
+  ['ti_rookie', 'Rookie', 'c', { def: true }], ['ti_private', 'Private', 'c'], ['ti_cadet', 'Cadet', 'c'], ['ti_scout', 'Scout', 'c'], ['ti_rookie2', 'Greenhorn', 'c'], ['ti_gunner', 'Gunner', 'c'],
+  ['ti_bugs', 'Bug Squasher', 'r'], ['ti_corporal', 'Corporal Chaos', 'r'], ['ti_dodge', 'Dodge Master', 'r'], ['ti_barrels', 'Barrel Baron', 'r'], ['ti_sniper', 'Jungle Sniper', 'r'], ['ti_medic', 'Field Medic', 'r'], ['ti_wrench', 'Handyman', 'r'],
+  ['ti_ice', 'Heart of Ice', 'e'], ['ti_lava', 'Lava King', 'e'], ['ti_storm', 'The Storm', 'e'], ['ti_shadow', 'Shadow', 'e'], ['ti_hunter', 'Boss Hunter', 'e'], ['ti_tank', 'Walking Tank', 'e'], ['ti_lucky', 'Lucky One', 'e'],
+  ['ti_legend', 'Zone Legend', 'l'], ['ti_immortal', 'Immortal', 'l'], ['ti_general', 'General', 'l'], ['ti_phantom', 'Phantom', 'l'],
+  ['ti_baron', 'Cabbage Baron', 'm'], ['ti_zero', 'Patient Zero', 'm'], ['ti_god', 'God of War', 'm'],
+  ['ti_queen', 'Kingslayer', 'e', { src: 'boss1' }], ['ti_swarm', 'Swarm Slayer', 'l', { src: 'k1000' }], ['ti_perfect', 'Perfectionist', 'l', { src: 'stars' }], ['ti_glad', 'Gladiator', 'e', { src: 'pvp10' }], ['ti_team', 'Brother in Arms', 'e', { src: 'coop' }], ['ti_pyro', 'Pyromaniac', 'r', { src: 'barrels' }]
 ].forEach(([id, n, r, ex]) => addCos('title', id, n, r, ex || {}));
 
 const COS_DEF_EQ = { skin: 'sk_def', visor: 'vi_def', hat: 'ht_none', trail: 'tr_def', dash: 'da_def', kill: 'ki_none', pet: 'pe_none', title: 'ti_rookie' };
 const CRATES = {
-  c: { name: 'Zwykła skrzynia', price: 150, items: 1, w: { c: 60, r: 28, e: 9.5, l: 2.2, m: .3 }, col: '#7a8ca8' },
-  e: { name: 'Elitarna skrzynia', price: 400, items: 2, w: { r: 66, e: 26, l: 7, m: 1 }, col: '#b45cff' },
-  l: { name: 'Legendarna skrzynia', price: 1000, items: 3, w: { e: 64, l: 30, m: 6 }, col: '#ffb627' }
+  c: { name: 'Standard Crate', price: 150, items: 1, w: { c: 60, r: 28, e: 9.5, l: 2.2, m: .3 }, col: '#7a8ca8' },
+  e: { name: 'Elite Crate', price: 400, items: 2, w: { r: 66, e: 26, l: 7, m: 1 }, col: '#b45cff' },
+  l: { name: 'Legendary Crate', price: 1000, items: 3, w: { e: 64, l: 30, m: 6 }, col: '#ffb627' }
 };
 function ensureCos() {
   const d = { own: {}, eq: Object.assign({}, COS_DEF_EQ), shards: 0, crates: { c: 1, e: 0, l: 0 }, gift: '', seen: {} };
@@ -152,7 +152,7 @@ function openCrate(type) {
   persist();
   return out;
 }
-function giveCrate(type, n, why) { save.cos.crates[type] = (save.cos.crates[type] || 0) + (n || 1); persist(); if (why && typeof toast === 'function') toast('Nagroda: <b>' + CRATES[type].name + (n > 1 ? ' ×' + n : '') + '</b> · ' + why); }
+function giveCrate(type, n, why) { save.cos.crates[type] = (save.cos.crates[type] || 0) + (n || 1); persist(); if (why && typeof toast === 'function') toast('Reward: <b>' + CRATES[type].name + (n > 1 ? ' ×' + n : '') + '</b> · ' + why); }
 function cratesTotal() { const c = save.cos.crates; return (c.c || 0) + (c.e || 0) + (c.l || 0); }
 function myLook() { const e = save.cos.eq; return { hero: save.hero, skin: e.skin, visor: e.visor, hat: e.hat }; }
 function myCos() { const e = save.cos.eq; return { trail: e.trail, dash: e.dash, kill: e.kill, pet: e.pet, title: e.title }; }

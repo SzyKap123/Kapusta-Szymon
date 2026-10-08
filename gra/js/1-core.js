@@ -19,7 +19,7 @@ function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.fl
 // ================= Zapis =================
 const SAVE_KEY = 'strefa0_v1';
 const DEF_SAVE = { coins: 0, unlocked: 0, stars: [0, 0, 0, 0, 0, 0, 0, 0, 0], weapons: ['blaster'],
-  upg: { hp: 0, dmg: 0, dash: 0, gren: 0, mag: 0 }, settings: { quality: 'high', sfx: true, music: true, auto: false },
+  upg: { hp: 0, dmg: 0, dash: 0, gren: 0, mag: 0 }, settings: { quality: 'high', sfx: true, music: true, auto: false, diff: 'normal', ui: 'm', lefty: false, shake: true, vibe: true, help: false },
   heroes: ['assault'], hero: 'assault', nick: '', ach: {}, daily: { day: '', best: 0, tries: 0 },
   stats: { kills: 0, bosses: 0, deaths: 0, survBest: 0, survKills: 0, pvpKills: 0, pvpWins: 0, coopWins: 0, games: 0, coinsEarned: 0, perks: 0, barrels: 0 } };
 function loadSave() {
@@ -47,80 +47,82 @@ function persist() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(save));
 
 // ================= Dane gry =================
 const WEAPONS = {
-  blaster: { name: 'Blaster', desc: 'Niezawodny pistolet energetyczny.', price: 0, rate: 5, dmg: 20, spd: 950, mag: 16, reload: 1.0, spread: .04, pellets: 1, color: '#3ef0ff', r: 5, range: 720 },
-  rifle: { name: 'Karabin Pulsacyjny', desc: 'Szybki ogień i duży magazynek.', price: 300, rate: 10, dmg: 13, spd: 1100, mag: 32, reload: 1.35, spread: .08, pellets: 1, color: '#8dff6a', r: 4, range: 740 },
-  shotgun: { name: 'Rozpruwacz', desc: 'Plazmowa śrutówka – 7 pocisków naraz.', price: 450, rate: 1.6, dmg: 14, spd: 880, mag: 6, reload: 1.4, spread: .55, pellets: 7, color: '#ffb627', r: 4.5, range: 430 },
-  rail: { name: 'Działo Szynowe', desc: 'Przebija wszystkich wrogów na linii.', price: 700, rate: 1.8, dmg: 75, spd: 1900, mag: 5, reload: 1.6, spread: 0, pellets: 1, pierce: 99, color: '#c77dff', r: 5, range: 1000 },
-  rocket: { name: 'Wyrzutnia Burza', desc: 'Rakiety z wybuchem obszarowym.', price: 950, rate: 1.25, dmg: 42, spd: 640, mag: 4, reload: 1.9, spread: .02, pellets: 1, explode: 95, color: '#ff6b3d', r: 7, range: 760 }
+  blaster: { name: 'Blaster', desc: 'Reliable energy pistol.', price: 0, rate: 5, dmg: 20, spd: 950, mag: 16, reload: 1.0, spread: .04, pellets: 1, color: '#3ef0ff', r: 5, range: 720 },
+  rifle: { name: 'Pulse Rifle', desc: 'Rapid fire and a big magazine.', price: 300, rate: 10, dmg: 13, spd: 1100, mag: 32, reload: 1.35, spread: .08, pellets: 1, color: '#8dff6a', r: 4, range: 740 },
+  shotgun: { name: 'Ripper', desc: 'Plasma shotgun – 7 pellets per shot.', price: 450, rate: 1.6, dmg: 14, spd: 880, mag: 6, reload: 1.4, spread: .55, pellets: 7, color: '#ffb627', r: 4.5, range: 430 },
+  rail: { name: 'Railgun', desc: 'Pierces every enemy in a line.', price: 700, rate: 1.8, dmg: 75, spd: 1900, mag: 5, reload: 1.6, spread: 0, pellets: 1, pierce: 99, color: '#c77dff', r: 5, range: 1000 },
+  rocket: { name: 'Storm Launcher', desc: 'Rockets with splash damage.', price: 950, rate: 1.25, dmg: 42, spd: 640, mag: 4, reload: 1.9, spread: .02, pellets: 1, explode: 95, color: '#ff6b3d', r: 7, range: 760 }
 };
 const WEAPON_KEYS = Object.keys(WEAPONS);
 const HEROES = {
-  assault: { name: 'Szturmowiec', price: 0, desc: 'Furia: przez 6 s strzela 60% szybciej i mocniej.', ability: 'Furia', cd: 16, armor: ['#f2f7ff', '#a9b9d0', '#5b6a84'], visor: '#3ef0ff' },
-  engineer: { name: 'Inżynier', price: 600, desc: 'Wieżyczka: stawia działko, które przez 12 s strzela samo.', ability: 'Wieżyczka', cd: 20, armor: ['#ffe9b0', '#e0a640', '#7a5218'], visor: '#ffb627' },
-  medic: { name: 'Medyk', price: 600, desc: 'Pole leczące: leczy ciebie i drużynę oraz chroni przed obrażeniami.', ability: 'Pole', cd: 22, armor: ['#e8fff0', '#8fdca8', '#2f6a48'], visor: '#8dff6a' }
+  assault: { name: 'Assault', price: 0, desc: 'Fury: fire 60% faster and harder for 6 s.', ability: 'Fury', cd: 16, armor: ['#f2f7ff', '#a9b9d0', '#5b6a84'], visor: '#3ef0ff' },
+  engineer: { name: 'Engineer', price: 600, desc: 'Turret: deploys a gun that fires on its own for 12 s.', ability: 'Turret', cd: 20, armor: ['#ffe9b0', '#e0a640', '#7a5218'], visor: '#ffb627' },
+  medic: { name: 'Medic', price: 600, desc: 'Heal Field: heals you and your team and reduces damage taken.', ability: 'Heal', cd: 22, armor: ['#e8fff0', '#8fdca8', '#2f6a48'], visor: '#8dff6a' }
 };
 const HERO_KEYS = Object.keys(HEROES);
 const ACHS = [
-  { id: 'k100', name: 'Pierwsza krew', desc: 'Pokonaj 100 wrogów', reward: 100, test: s => s.stats.kills >= 100 },
-  { id: 'k1000', name: 'Pogromca roju', desc: 'Pokonaj 1000 wrogów', reward: 400, test: s => s.stats.kills >= 1000 },
-  { id: 'boss1', name: 'Królobójca', desc: 'Pokonaj pierwszego bossa', reward: 150, test: s => s.stats.bosses >= 1 },
-  { id: 'boss3', name: 'Łowca tytanów', desc: 'Pokonaj 3 bossów', reward: 300, test: s => s.stats.bosses >= 3 },
-  { id: 'camp', name: 'Strefa oczyszczona', desc: 'Ukończ wszystkie 9 misji', reward: 500, test: s => s.unlocked >= 8 && s.stars[8] > 0 },
-  { id: 'stars', name: 'Perfekcjonista', desc: 'Zdobądź 27 gwiazdek', reward: 600, test: s => s.stars.reduce((a, b) => a + b, 0) >= 27 },
-  { id: 'surv10', name: 'Twardziel', desc: 'Przetrwaj 10 fal', reward: 200, test: s => s.stats.survBest >= 10 },
-  { id: 'surv25', name: 'Niezniszczalny', desc: 'Przetrwaj 25 fal', reward: 500, test: s => s.stats.survBest >= 25 },
-  { id: 'arsenal', name: 'Kolekcjoner', desc: 'Kup wszystkie bronie', reward: 300, test: s => s.weapons.length >= 5 },
-  { id: 'heroes', name: 'Cała drużyna', desc: 'Odblokuj wszystkich bohaterów', reward: 300, test: s => s.heroes.length >= 3 },
-  { id: 'pvp10', name: 'Gladiator', desc: 'Wyeliminuj 10 graczy w PvP', reward: 250, test: s => s.stats.pvpKills >= 10 },
-  { id: 'pvpwin', name: 'Mistrz areny', desc: 'Wygraj pojedynek PvP', reward: 300, test: s => s.stats.pvpWins >= 1 },
-  { id: 'coop', name: 'Ramię w ramię', desc: 'Wygraj misję w kooperacji', reward: 250, test: s => s.stats.coopWins >= 1 },
-  { id: 'barrels', name: 'Piroman', desc: 'Wysadź 50 beczek', reward: 150, test: s => s.stats.barrels >= 50 },
-  { id: 'daily', name: 'Codzienny rytuał', desc: 'Zagraj w wyzwanie dnia', reward: 100, test: s => s.daily.tries >= 1 }
+  { id: 'k100', name: 'First Blood', desc: 'Defeat 100 enemies', reward: 100, test: s => s.stats.kills >= 100 },
+  { id: 'k1000', name: 'Swarm Slayer', desc: 'Defeat 1,000 enemies', reward: 400, test: s => s.stats.kills >= 1000 },
+  { id: 'boss1', name: 'Kingslayer', desc: 'Defeat your first boss', reward: 150, test: s => s.stats.bosses >= 1 },
+  { id: 'boss3', name: 'Titan Hunter', desc: 'Defeat 3 bosses', reward: 300, test: s => s.stats.bosses >= 3 },
+  { id: 'camp', name: 'Zone Cleared', desc: 'Complete all 9 missions', reward: 500, test: s => s.unlocked >= 8 && s.stars[8] > 0 },
+  { id: 'stars', name: 'Perfectionist', desc: 'Earn all 27 stars', reward: 600, test: s => s.stars.reduce((a, b) => a + b, 0) >= 27 },
+  { id: 'surv10', name: 'Tough Cookie', desc: 'Survive 10 waves', reward: 200, test: s => s.stats.survBest >= 10 },
+  { id: 'surv25', name: 'Unbreakable', desc: 'Survive 25 waves', reward: 500, test: s => s.stats.survBest >= 25 },
+  { id: 'arsenal', name: 'Arsenal', desc: 'Buy every weapon', reward: 300, test: s => s.weapons.length >= 5 },
+  { id: 'heroes', name: 'Full Squad', desc: 'Unlock every hero', reward: 300, test: s => s.heroes.length >= 3 },
+  { id: 'pvp10', name: 'Gladiator', desc: 'Eliminate 10 players in PvP', reward: 250, test: s => s.stats.pvpKills >= 10 },
+  { id: 'pvpwin', name: 'Arena Champion', desc: 'Win a PvP match', reward: 300, test: s => s.stats.pvpWins >= 1 },
+  { id: 'coop', name: 'Brothers in Arms', desc: 'Win a co-op mission', reward: 250, test: s => s.stats.coopWins >= 1 },
+  { id: 'barrels', name: 'Pyromaniac', desc: 'Blow up 50 barrels', reward: 150, test: s => s.stats.barrels >= 50 },
+  { id: 'daily', name: 'Daily Ritual', desc: 'Play a Daily Challenge', reward: 100, test: s => s.daily.tries >= 1 }
 ];
 const DAILY_MODS = [
-  { id: 'fast', name: 'Szybcy wrogowie', desc: 'Wrogowie są o 30% szybsi' },
-  { id: 'glass', name: 'Szklane działo', desc: 'Zadajesz i otrzymujesz 50% więcej obrażeń' },
-  { id: 'horde', name: 'Horda', desc: 'Fale są o połowę większe' },
-  { id: 'rich', name: 'Gorączka złota', desc: 'Podwójne monety, mniej leczenia' },
-  { id: 'dark', name: 'Zaćmienie', desc: 'Prawie całkowita ciemność' },
-  { id: 'boom', name: 'Wybuchowo', desc: 'Każdy pokonany wróg wybucha' }
+  { id: 'fast', name: 'Fast Foes', desc: 'Enemies move 30% faster' },
+  { id: 'glass', name: 'Glass Cannon', desc: 'Deal and take 50% more damage' },
+  { id: 'horde', name: 'Horde', desc: 'Waves are 50% bigger' },
+  { id: 'rich', name: 'Gold Rush', desc: 'Double coins, fewer health packs' },
+  { id: 'dark', name: 'Eclipse', desc: 'Almost total darkness' },
+  { id: 'boom', name: 'Volatile', desc: 'Every defeated enemy explodes' }
 ];
+const DIFFS = { easy: { hp: .7, dmg: .55, coin: .9 }, normal: { hp: 1, dmg: 1, coin: 1 }, hard: { hp: 1.35, dmg: 1.4, coin: 1.25 } };
+const DIFF = () => DIFFS[save.settings.diff] || DIFFS.normal;
 function todayKey() { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
 function dailySpec() {
   const k = todayKey(), h = hashStr('sz-' + k);
   return withSeed(h, () => { const mods = shuffle(DAILY_MODS.slice()).slice(0, 2); return { key: k, seed: h, biome: ri(0, 2), mods: mods.map(m => m.id), names: mods.map(m => m.name), descs: mods.map(m => m.desc) }; });
 }
 const UPGRADES = {
-  hp: { name: 'Pancerz', desc: '+20 maksymalnego zdrowia', max: 5, icon: 'shield', cost: l => 90 + l * 90 },
-  dmg: { name: 'Moc broni', desc: '+10% obrażeń wszystkich broni', max: 5, icon: 'bolt', cost: l => 120 + l * 110 },
-  dash: { name: 'Silnik zrywu', desc: '−12% czasu odnowienia zrywu', max: 4, icon: 'boot', cost: l => 100 + l * 100 },
-  gren: { name: 'Ładownica', desc: '+1 granat na start misji', max: 3, icon: 'boom', cost: l => 130 + l * 120 },
-  mag: { name: 'Magnes', desc: '+30% zasięgu zbierania', max: 3, icon: 'magnet', cost: l => 80 + l * 80 }
+  hp: { name: 'Armor', desc: '+20 max health', max: 5, icon: 'shield', cost: l => 90 + l * 90 },
+  dmg: { name: 'Firepower', desc: '+10% damage for all weapons', max: 5, icon: 'bolt', cost: l => 120 + l * 110 },
+  dash: { name: 'Dash Engine', desc: '−12% dash cooldown', max: 4, icon: 'boot', cost: l => 100 + l * 100 },
+  gren: { name: 'Bandolier', desc: '+1 starting grenade', max: 3, icon: 'boom', cost: l => 130 + l * 120 },
+  mag: { name: 'Magnet', desc: '+30% pickup range', max: 3, icon: 'magnet', cost: l => 80 + l * 80 }
 };
 const PERKS = [
-  { id: 'dmg', name: 'Ostre naboje', desc: '+20% obrażeń', icon: 'bolt', c: '#ffb627', max: 5 },
-  { id: 'rate', name: 'Szybki spust', desc: '+15% szybkostrzelności', icon: 'rate', c: '#3ef0ff', max: 5 },
-  { id: 'multi', name: 'Rozszczepienie', desc: '+1 pocisk w każdej salwie', icon: 'multi', c: '#8dff6a', max: 3 },
-  { id: 'pierce', name: 'Przebicie', desc: 'Pociski przebijają +1 wroga', icon: 'pierce', c: '#c77dff', max: 3 },
-  { id: 'bounce', name: 'Rykoszet', desc: 'Pociski odbijają się od przeszkód', icon: 'bounce', c: '#7fd8ff', max: 3 },
-  { id: 'vamp', name: 'Wampiryzm', desc: 'Każde zabójstwo leczy 2 HP', icon: 'heart', c: '#ff4d6d', max: 3 },
-  { id: 'hp', name: 'Nanopancerz', desc: '+30 maks. zdrowia i leczenie', icon: 'shield', c: '#8dff6a', max: 5 },
-  { id: 'speed', name: 'Sprinter', desc: '+12% szybkości ruchu', icon: 'boot', c: '#3ef0ff', max: 3 },
-  { id: 'orb', name: 'Satelita', desc: '+1 kula energii krążąca wokół ciebie', icon: 'orb', c: '#7fd8ff', max: 4 },
-  { id: 'burn', name: 'Plazma', desc: 'Trafienia podpalają wrogów', icon: 'flame', c: '#ff7a2e', max: 3 },
-  { id: 'chain', name: 'Łańcuch', desc: 'Szansa na piorun skaczący po wrogach', icon: 'chain', c: '#b9a6ff', max: 3 },
-  { id: 'crit', name: 'Precyzja', desc: '+15% szansy na trafienie krytyczne ×2', icon: 'crit', c: '#ffe14d', max: 4 },
-  { id: 'boom', name: 'Detonator', desc: 'Pokonani wrogowie wybuchają', icon: 'boom', c: '#ff6b3d', max: 2 },
-  { id: 'magnet', name: 'Grawiton', desc: '+40% zasięgu zbierania', icon: 'magnet', c: '#8dff6a', max: 2 }
+  { id: 'dmg', name: 'Hollow Points', desc: '+20% damage', icon: 'bolt', c: '#ffb627', max: 5 },
+  { id: 'rate', name: 'Hair Trigger', desc: '+15% fire rate', icon: 'rate', c: '#3ef0ff', max: 5 },
+  { id: 'multi', name: 'Split Shot', desc: '+1 projectile per shot', icon: 'multi', c: '#8dff6a', max: 3 },
+  { id: 'pierce', name: 'Piercing', desc: 'Shots pierce +1 enemy', icon: 'pierce', c: '#c77dff', max: 3 },
+  { id: 'bounce', name: 'Ricochet', desc: 'Shots bounce off obstacles', icon: 'bounce', c: '#7fd8ff', max: 3 },
+  { id: 'vamp', name: 'Vampirism', desc: 'Each kill heals 2 HP', icon: 'heart', c: '#ff4d6d', max: 3 },
+  { id: 'hp', name: 'Nano Armor', desc: '+30 max health and a heal', icon: 'shield', c: '#8dff6a', max: 5 },
+  { id: 'speed', name: 'Sprinter', desc: '+12% move speed', icon: 'boot', c: '#3ef0ff', max: 3 },
+  { id: 'orb', name: 'Satellite', desc: '+1 energy orb orbiting you', icon: 'orb', c: '#7fd8ff', max: 4 },
+  { id: 'burn', name: 'Plasma Burn', desc: 'Hits set enemies on fire', icon: 'flame', c: '#ff7a2e', max: 3 },
+  { id: 'chain', name: 'Chain Lightning', desc: 'Chance to arc lightning between enemies', icon: 'chain', c: '#b9a6ff', max: 3 },
+  { id: 'crit', name: 'Precision', desc: '+15% chance of a ×2 critical hit', icon: 'crit', c: '#ffe14d', max: 4 },
+  { id: 'boom', name: 'Detonator', desc: 'Defeated enemies explode', icon: 'boom', c: '#ff6b3d', max: 2 },
+  { id: 'magnet', name: 'Graviton', desc: '+40% pickup range', icon: 'magnet', c: '#8dff6a', max: 2 }
 ];
 const BIOMES = [
-  { name: 'Obca Dżungla', sub: 'Świecący las, w którym gnieździ się Rój.', accent: '#4dffd2', ebCol: '#e05cff', ambient: [140, 162, 196], amb2: '#4dffd2',
+  { name: 'Alien Jungle', sub: 'A glowing forest where the Swarm nests.', accent: '#4dffd2', ebCol: '#e05cff', ambient: [140, 162, 196], amb2: '#4dffd2',
     css: 'radial-gradient(circle at 80% 0%, #1f8a6a, transparent 60%), linear-gradient(160deg, #0d2a24, #071512)',
     pal: { main: '#7cc63f', dark: '#2c5418', light: '#d4f58a', acc: '#b45cff', eye: '#ff3df2' } },
-  { name: 'Pustkowia Magmy', sub: 'Pękająca skorupa i rzeki lawy.', accent: '#ff8a3d', ebCol: '#ff6a1a', ambient: [160, 124, 118], amb2: '#ff7a2e',
+  { name: 'Magma Wastes', sub: 'Cracked crust and rivers of lava.', accent: '#ff8a3d', ebCol: '#ff6a1a', ambient: [160, 124, 118], amb2: '#ff7a2e',
     css: 'radial-gradient(circle at 80% 0%, #a8381a, transparent 60%), linear-gradient(160deg, #2a1410, #0f0807)',
     pal: { main: '#4a2d28', dark: '#1a0d0b', light: '#9a5a44', acc: '#ff7a2e', eye: '#ffd23c' } },
-  { name: 'Stacja Kriogeniczna', sub: 'Zamarznięta baza opanowana przez maszyny.', accent: '#7fd8ff', ebCol: '#5ad8ff', ambient: [122, 138, 182], amb2: '#7fd8ff',
+  { name: 'Cryo Station', sub: 'A frozen base overrun by machines.', accent: '#7fd8ff', ebCol: '#5ad8ff', ambient: [122, 138, 182], amb2: '#7fd8ff',
     css: 'radial-gradient(circle at 80% 0%, #2a6aa8, transparent 60%), linear-gradient(160deg, #142236, #080e18)',
     pal: { main: '#cfdcec', dark: '#4a5b74', light: '#ffffff', acc: '#3ec9ff', eye: '#ff3d5a' } }
 ];
@@ -130,9 +132,9 @@ const EDEF = {
   bomber: { hp: 22, spd: 200, r: 15, dmg: 26, xp: 2 },
   tank: { hp: 240, spd: 72, r: 30, dmg: 18, xp: 8 },
   sniper: { hp: 55, spd: 85, r: 19, dmg: 22, xp: 5 },
-  queen: { hp: 2400, spd: 95, r: 56, dmg: 20, xp: 40, boss: true, name: 'Królowa Roju' },
-  colossus: { hp: 3600, spd: 70, r: 60, dmg: 24, xp: 50, boss: true, name: 'Magmowy Kolos' },
-  warden: { hp: 4800, spd: 85, r: 56, dmg: 22, xp: 60, boss: true, hover: true, name: 'Lodowy Strażnik' }
+  queen: { hp: 2400, spd: 95, r: 56, dmg: 20, xp: 40, boss: true, name: 'Swarm Queen' },
+  colossus: { hp: 3600, spd: 70, r: 60, dmg: 24, xp: 50, boss: true, name: 'Magma Colossus' },
+  warden: { hp: 4800, spd: 85, r: 56, dmg: 22, xp: 60, boss: true, hover: true, name: 'Frost Warden' }
 };
 const BOSS_OF = ['queen', 'colossus', 'warden'];
 function buildWaves(idx, boss) {

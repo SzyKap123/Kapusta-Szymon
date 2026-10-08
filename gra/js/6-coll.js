@@ -46,7 +46,7 @@ function cosIcon(it) {
   ICON[key] = c;
   return cosIcon(it);
 }
-function srcText(it) { const a = ACHS.find(x => x.id === it.src); return a ? 'Nagroda za osiągnięcie: ' + a.name : ''; }
+function srcText(it) { const a = ACHS.find(x => x.id === it.src); return a ? 'Achievement reward: ' + a.name : ''; }
 function openColl() { ensureAudio(); show('sColl'); renderColl(); startPreview(); }
 function renderColl() {
   $('shardVal').textContent = save.cos.shards;
@@ -57,10 +57,10 @@ function renderColl() {
   for (const k of ['c', 'e', 'l']) {
     const C = CRATES[k], n = save.cos.crates[k] || 0;
     const b = document.createElement('button'); b.type = 'button'; b.className = 'crateBtn'; b.style.setProperty('--cc', C.col);
-    b.innerHTML = '<span class="box"></span><b>' + C.name.replace(' skrzynia', '') + '</b>' + (n ? '<span class="cnt">×' + n + '</span><small>Otwórz</small>' : '<small><i class="coin" style="width:11px;height:11px"></i>' + C.price + '</small>');
-    b.title = C.items + (C.items > 1 ? ' przedmioty' : ' przedmiot');
+    b.innerHTML = '<span class="box"></span><b>' + C.name.replace(' Crate', '') + '</b>' + (n ? '<span class="cnt">×' + n + '</span><small>Open</small>' : '<small><i class="coin" style="width:11px;height:11px"></i>' + C.price + '</small>');
+    b.title = C.items + (C.items > 1 ? ' items' : ' item');
     b.addEventListener('click', () => {
-      if (!n) { if (save.coins < C.price) { toast('Za mało monet na ' + C.name.toLowerCase()); return; } save.coins -= C.price; save.cos.crates[k]++; persist(); refreshCoins(); }
+      if (!n) { if (save.coins < C.price) { toast('Not enough coins for a ' + C.name); return; } save.coins -= C.price; save.cos.crates[k]++; persist(); refreshCoins(); }
       crateOpen(k);
     });
     cb.appendChild(b);
@@ -98,12 +98,12 @@ function renderColl() {
   const has = owns(it.id);
   info.innerHTML = '<h4 style="color:' + RAR[it.r].col + '"></h4><p></p>';
   info.querySelector('h4').textContent = has ? it.name : '??? · ' + RAR[it.r].name;
-  info.querySelector('p').textContent = has ? RAR[it.r].name + ' · ' + COS_CATS[it.cat] + (save.cos.eq[it.cat] === it.id ? ' · założone' : ' · stuknij, by założyć') : it.src ? srcText(it) : 'Zdobądź ze skrzyni albo kup za odłamki.';
+  info.querySelector('p').textContent = has ? RAR[it.r].name + ' · ' + COS_CATS[it.cat] + (save.cos.eq[it.cat] === it.id ? ' · equipped' : ' · tap to equip') : it.src ? srcText(it) : 'Find it in a crate or buy it with shards.';
   d.appendChild(info);
   if (!has && !it.src) {
     const cost = RAR[it.r].shard, b = document.createElement('button'); b.type = 'button'; b.className = 'btn small primary';
     b.innerHTML = '<span class="price"><i class="shard" style="width:10px;height:13px"></i>' + cost + '</span>'; b.disabled = save.cos.shards < cost;
-    b.addEventListener('click', () => { if (save.cos.shards < cost) return; save.cos.shards -= cost; save.cos.own[it.id] = 1; save.cos.eq[it.cat] = it.id; persist(); sfx('lvl'); toast('Odblokowano: <b>' + it.name + '</b>'); renderColl(); });
+    b.addEventListener('click', () => { if (save.cos.shards < cost) return; save.cos.shards -= cost; save.cos.own[it.id] = 1; save.cos.eq[it.cat] = it.id; persist(); sfx('lvl'); toast('Unlocked: <b>' + it.name + '</b>'); renderColl(); });
     d.appendChild(b);
   }
   updateCrateDot();
@@ -162,7 +162,7 @@ function crateOpen(type) {
   if (!save.cos.crates[type]) return;
   show('sCrate');
   const box = $('bigCrate'); box.style.setProperty('--cc', C.col); box.className = 'bigCrate'; box.hidden = false;
-  $('crKick').textContent = C.name + ' · stuknij, aby otworzyć';
+  $('crKick').textContent = C.name + ' · tap to open';
   $('reveal').innerHTML = ''; $('crBtns').innerHTML = '';
   crateRes = null;
   box.onclick = () => {
@@ -177,36 +177,36 @@ function crateOpen(type) {
 }
 function showReveal(type) {
   const best = crateRes.reduce((m, r) => Math.max(m, RAR_KEYS.indexOf(r.it.r)), 0);
-  $('crKick').textContent = best >= 3 ? 'Niesamowite!' : best >= 2 ? 'Świetny łup!' : 'Zawartość skrzyni';
+  $('crKick').textContent = best >= 3 ? 'Incredible!' : best >= 2 ? 'Great loot!' : 'Crate contents';
   sfx(best >= 3 ? 'win' : 'lvl');
   const rv = $('reveal');
   for (const r of crateRes) {
     const it = r.it, c = document.createElement('div'); c.className = 'rCard cutbox'; c.style.setProperty('--rc', RAR[it.r].col);
     c.appendChild(cosIcon(it));
     const h = document.createElement('h4'); h.textContent = it.name; c.appendChild(h);
-    c.insertAdjacentHTML('beforeend', '<em>' + RAR[it.r].name + '</em><small>' + COS_CATS[it.cat] + (r.dup ? ' · duplikat: +' + r.shards + ' odłamków' : ' · nowe!') + '</small>');
+    c.insertAdjacentHTML('beforeend', '<em>' + RAR[it.r].name + '</em><small>' + COS_CATS[it.cat] + (r.dup ? ' · duplicate: +' + r.shards + ' shards' : ' · new!') + '</small>');
     rv.appendChild(c);
   }
   const bt = $('crBtns'); bt.innerHTML = '';
   const add = (label, cls, fn) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn ' + cls; b.textContent = label; b.addEventListener('click', () => { sfx('click'); fn(); }); bt.appendChild(b); };
-  if (save.cos.crates[type] > 0) add('Otwórz kolejną (' + save.cos.crates[type] + ')', 'primary', () => crateOpen(type));
-  else if (save.coins >= CRATES[type].price) add('Kup kolejną · ' + CRATES[type].price, 'primary', () => { save.coins -= CRATES[type].price; save.cos.crates[type]++; persist(); crateOpen(type); });
+  if (save.cos.crates[type] > 0) add('Open another (' + save.cos.crates[type] + ')', 'primary', () => crateOpen(type));
+  else if (save.coins >= CRATES[type].price) add('Buy another · ' + CRATES[type].price, 'primary', () => { save.coins -= CRATES[type].price; save.cos.crates[type]++; persist(); crateOpen(type); });
   const first = crateRes.find(r => !r.dup);
-  if (first) add('Załóż ' + first.it.name, '', () => { save.cos.eq[first.it.cat] = first.it.id; delete save.cos.seen[first.it.id]; persist(); collCat = first.it.cat; collSel = first.it.id; openColl(); });
-  add('Kolekcja', 'ghost', () => openColl());
+  if (first) add('Equip ' + first.it.name, '', () => { save.cos.eq[first.it.cat] = first.it.id; delete save.cos.seen[first.it.id]; persist(); collCat = first.it.cat; collSel = first.it.id; openColl(); });
+  add('Collection', 'ghost', () => openColl());
 }
 function updateCrateDot() { const n = cratesTotal(), d = $('crateDot'); d.hidden = !n; d.textContent = n; }
 // ---------- nagrody ----------
 function gameRewards(mode, won, waves) {
-  if (mode === 'mission' && won) giveCrate(G.L.boss ? 'e' : 'c', 1, G.L.boss ? 'pokonany boss' : 'ukończona misja');
-  else if (mode === 'coop' && won) giveCrate('e', 1, 'wygrana w drużynie');
-  else if (mode === 'pvp') giveCrate(won ? 'e' : 'c', 1, won ? 'wygrany pojedynek' : 'udział w pojedynku');
-  else if (mode === 'survival' && waves >= 5) { giveCrate('c', Math.min(3, Math.floor(waves / 5)), 'przetrwane fale'); if (waves >= 15) giveCrate('e', 1, '15+ fal'); }
-  else if (mode === 'daily' && save.daily.crate !== todayKey()) { save.daily.crate = todayKey(); giveCrate('e', 1, 'wyzwanie dnia'); }
+  if (mode === 'mission' && won) giveCrate(G.L.boss ? 'e' : 'c', 1, G.L.boss ? 'boss defeated' : 'mission complete');
+  else if (mode === 'coop' && won) giveCrate('e', 1, 'co-op victory');
+  else if (mode === 'pvp') giveCrate(won ? 'e' : 'c', 1, won ? 'duel won' : 'duel played');
+  else if (mode === 'survival' && waves >= 5) { giveCrate('c', Math.min(3, Math.floor(waves / 5)), 'waves survived'); if (waves >= 15) giveCrate('e', 1, '15+ waves'); }
+  else if (mode === 'daily' && save.daily.crate !== todayKey()) { save.daily.crate = todayKey(); giveCrate('e', 1, 'daily challenge'); }
 }
 function dailyGift() {
   if (save.cos.gift === todayKey()) return;
-  save.cos.gift = todayKey(); giveCrate('c', 1, 'dzienna nagroda za logowanie');
+  save.cos.gift = todayKey(); giveCrate('c', 1, 'daily login gift');
 }
 $('bColl').addEventListener('click', () => { sfx('click'); openColl(); });
 dailyGift();

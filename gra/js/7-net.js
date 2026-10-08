@@ -1,11 +1,11 @@
 'use strict';
 // ================= Online: lobby, pokoje, synchronizacja, ranking =================
 const NET = { room: null, db: null, user: null, uid: null, ok: false, tried: false, myPeer: null, lobbyPeers: [], gr: null, peers: [], code: null, host: false, mode: 'coop', li: 0, seenGo: null };
-const MODE_NAMES = { coop: 'Kooperacja', pvp: 'Pojedynek PvP' };
+const MODE_NAMES = { coop: 'Co-op', pvp: 'PvP Duel' };
 const W_IDX = WEAPON_KEYS, T_IDX = Object.keys(EDEF), ST_IDX = ['move', 'aim', 'charge', 'stun', 'fuse', 'lock'];
 const num = (v, d) => { const n = +v; return Number.isFinite(n) ? n : (d || 0); };
 const okColor = c => typeof c === 'string' && /^#[0-9a-fA-F]{6}$/.test(c) ? c : '#ff6a1a';
-function nick() { return (save.nick || '').trim().slice(0, 14) || 'Żołnierz'; }
+function nick() { return (save.nick || '').trim().slice(0, 14) || 'Soldier'; }
 
 async function initOnline() {
   if (NET.tried) return; NET.tried = true;
@@ -40,13 +40,13 @@ function newCode() { const a = 'abcdefghjkmnpqrstuvwxyz23456789'; let s = ''; fo
 async function joinRoom(code, asHost) {
   if (!NET.room) return;
   code = cleanCode(code);
-  if (!code) { toast('Wpisz kod pokoju'); return; }
+  if (!code) { toast('Enter a room code'); return; }
   await leaveRoom();
   try { NET.gr = await NET.room.join('sz-' + code); }
-  catch (e) { NET.gr = null; toast(e && e.code === 'limit_reached' ? 'Za dużo pokoi naraz – spróbuj za chwilę' : 'Nie udało się wejść do pokoju'); return; }
+  catch (e) { NET.gr = null; toast(e && e.code === 'limit_reached' ? 'Too many rooms open – try again in a moment' : 'Could not join the room'); return; }
   NET.code = code; NET.host = !!asHost; NET.seenGo = null; NET.peers = [];
   const gr = NET.gr;
-  gr.onPeers(ch => { if (gr !== NET.gr) return; NET.peers = ch.peers; onRoomPeers(); }, () => { if (gr !== NET.gr) return; toast('Utracono połączenie z pokojem'); NET.gr = null; if (!G || !G.net) { goMenu(); showOnline(); } });
+  gr.onPeers(ch => { if (gr !== NET.gr) return; NET.peers = ch.peers; onRoomPeers(); }, () => { if (gr !== NET.gr) return; toast('Lost connection to the room'); NET.gr = null; if (!G || !G.net) { goMenu(); showOnline(); } });
   roomPresence();
   pushLobbyPresence();
   renderRoom(); show('sRoom');
@@ -73,7 +73,7 @@ function onRoomPeers() {
 function hostStart() {
   if (!NET.host || !NET.gr) return;
   const others = NET.peers.filter(p => !p.sameTab).length;
-  if (NET.mode === 'pvp' && others < 1) { toast('Pojedynek wymaga co najmniej 2 graczy'); return; }
+  if (NET.mode === 'pvp' && others < 1) { toast('A duel needs at least 2 players'); return; }
   const go = { id: Date.now().toString(36) + ri(0, 999), s: (Math.random() * 1e9) >>> 0, m: NET.mode, l: NET.li, b: NET.mode === 'pvp' ? ri(0, 2) : LEVELS[NET.li].biome };
   NET.seenGo = go.id;
   roomPresence({ go });
@@ -90,8 +90,8 @@ function startNetGame(go) {
   G.cam.x = p.x; G.cam.y = p.y;
   G.net = makeNetSession(mode, String(go.id));
   G.feed = [];
-  G.banner = mode === 'pvp' ? { title: 'Pojedynek', sub: 'Pierwszy do ' + G.pvp.target + ' eliminacji wygrywa', t: 2.6, max: 2.6 }
-    : { title: 'Misja ' + (li + 1) + ' · drużyna', sub: BIOMES[G.bi].name, t: 2.4, max: 2.4 };
+  G.banner = mode === 'pvp' ? { title: 'Duel', sub: 'First to ' + G.pvp.target + ' kills wins', t: 2.6, max: 2.6 }
+    : { title: 'Mission ' + (li + 1) + ' · Squad', sub: BIOMES[G.bi].name, t: 2.4, max: 2.4 };
   G.waveDelay = 2.4;
   state = 'play'; show(null); music.intense = 0;
   pushLobbyPresence();
@@ -139,7 +139,7 @@ function sendState(S) {
 function remoteFor(pe) {
   let r = G.remotes.get(pe.peer);
   if (!r) {
-    r = { peer: pe.peer, x: 0, y: 0, tx: 0, ty: 0, aim: 0, hp: 100, maxHp: 100, dead: false, inv: 0, vx: 0, vy: 0, r: 18, walk: 0, moving: false, kills: 0, init: false, nick: 'Gracz', hero: 'assault', wid: 'blaster' };
+    r = { peer: pe.peer, x: 0, y: 0, tx: 0, ty: 0, aim: 0, hp: 100, maxHp: 100, dead: false, inv: 0, vx: 0, vy: 0, r: 18, walk: 0, moving: false, kills: 0, init: false, nick: 'Player', hero: 'assault', wid: 'blaster' };
     G.remotes.set(pe.peer, r);
     const dk = pe.presence && Array.isArray(pe.presence.dk) ? num(pe.presence.dk[0]) : 0;
     G.net.seen[pe.peer] = { ev: 0, sh: 0, hi: 0, dk };
@@ -148,7 +148,7 @@ function remoteFor(pe) {
 }
 function netTick(S, dt) {
   const gr = NET.gr;
-  if (!gr) { if (!G.over && S.mode !== 'solo') { G.over = 'lose'; G.overT = 0; G.netMsg = 'Utracono połączenie'; } return; }
+  if (!gr) { if (!G.over && S.mode !== 'solo') { G.over = 'lose'; G.overT = 0; G.netMsg = 'Connection lost'; } return; }
   S.sendT -= dt;
   if (S.sendT <= 0) { S.sendT = .05; sendState(S); }
   const present = new Set();
@@ -158,7 +158,7 @@ function netTick(S, dt) {
     present.add(pe.peer);
     const r = remoteFor(pe), sn = S.seen[pe.peer];
     if (pr.host === 1) S.hostPeer = pe.peer;
-    r.nick = String(pr.n || 'Gracz').slice(0, 16); r.hero = HEROES[pr.h] ? pr.h : 'assault';
+    r.nick = String(pr.n || 'Player').slice(0, 16); r.hero = HEROES[pr.h] ? pr.h : 'assault';
     if (Array.isArray(pr.c) && pr.c !== r._c) {
       r._c = pr.c; const v = (i, cat, d) => COS[pr.c[i]] && COS[pr.c[i]].cat === cat ? pr.c[i] : d;
       r.look = { hero: r.hero, skin: v(0, 'skin', 'sk_def'), visor: v(1, 'visor', 'vi_def'), hat: v(2, 'hat', 'ht_none') };
@@ -190,8 +190,8 @@ function netTick(S, dt) {
       if (n > sn.dk) {
         sn.dk = n;
         const byMe = pr.dk[1] === NET.myPeer;
-        if (byMe) { G.pvp.kills++; save.stats.pvpKills++; killFx(G.player.cos.kill, r.x, r.y, true); G.banner = { title: 'Eliminacja!', sub: r.nick, t: 1.4, max: 1.4 }; sfx('kill'); }
-        const killer = byMe ? 'Ty' : (G.remotes.get(pr.dk[1]) || {}).nick || '?';
+        if (byMe) { G.pvp.kills++; save.stats.pvpKills++; killFx(G.player.cos.kill, r.x, r.y, true); G.banner = { title: 'Eliminated!', sub: r.nick, t: 1.4, max: 1.4 }; sfx('kill'); }
+        const killer = byMe ? 'You' : (G.remotes.get(pr.dk[1]) || {}).nick || '?';
         G.feed.push({ text: killer + ' → ' + r.nick, t: 5 });
         gibs(r.x, r.y, ['#c9d6e8', '#5b6a84', '#ff4d6d'], 20, 300); flash(r.x, r.y, 200, '#ff4d6d', .3);
       }
@@ -200,7 +200,7 @@ function netTick(S, dt) {
   }
   for (const [k] of G.remotes) if (!present.has(k)) {
     G.remotes.delete(k);
-    if (S.guest && k === S.hostPeer && !G.over) { G.over = 'lose'; G.overT = 0; G.netMsg = 'Gospodarz opuścił grę'; }
+    if (S.guest && k === S.hostPeer && !G.over) { G.over = 'lose'; G.overT = 0; G.netMsg = 'The host left the game'; }
   }
   for (const r of G.remotes.values()) {
     const ox = r.x, oy = r.y, k = Math.min(1, dt * 12);
@@ -232,7 +232,7 @@ function applyEvent(S, pe, e) {
       if (type) { const mine = S.lastHit.has(id) && G.t - S.lastHit.get(id) < 1.5; enemyDeathFx(num(e[2]), num(e[3]), type, mine); if (mine && G.player.mods.vamp) healPlayer(G.player.mods.vamp); }
       break;
     }
-    case 'b': if (EDEF[e[1]]) { G.banner = { title: EDEF[e[1]].name, sub: 'Boss nadchodzi', t: 3, max: 3, boss: true }; sfx('roar'); G.shake = 10; music.intense = 1; } break;
+    case 'b': if (EDEF[e[1]]) { G.banner = { title: EDEF[e[1]].name, sub: 'Boss incoming', t: 3, max: 3, boss: true }; sfx('roar'); G.shake = 10; music.intense = 1; } break;
   }
 }
 function mkProxy(id, type, x, y) {
@@ -289,8 +289,8 @@ async function submitScore(fields) {
 }
 async function loadRanking(tab) {
   const box = $('rankList');
-  if (!NET.db) { box.innerHTML = '<p class="hint">Ranking działa po otwarciu gry w aplikacji Claude, gdy jesteś zalogowany.</p>'; return; }
-  box.innerHTML = '<p class="hint">Wczytywanie…</p>';
+  if (!NET.db) { box.innerHTML = '<p class="hint">Leaderboards work when you open the game in the Claude app while signed in.</p>'; return; }
+  box.innerHTML = '<p class="hint">Loading…</p>';
   try {
     let q = NET.db.collection('lb');
     const field = tab === 'daily' ? 'daily' : tab === 'pvp' ? 'pvpWins' : 'surv';
@@ -298,15 +298,15 @@ async function loadRanking(tab) {
     q = q.orderBy(field, 'desc').limit(25);
     const snap = await q.get();
     const rows = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(r => num(r[field]) > 0);
-    if (!rows.length) { box.innerHTML = '<p class="hint">Jeszcze nikt tu nie trafił. Zagraj i bądź pierwszy!</p>'; return; }
-    const unit = tab === 'daily' ? 'pkt' : tab === 'pvp' ? 'wygr.' : 'fal';
+    if (!rows.length) { box.innerHTML = '<p class="hint">No scores yet. Play and be the first!</p>'; return; }
+    const unit = tab === 'daily' ? 'pts' : tab === 'pvp' ? 'wins' : 'waves';
     box.innerHTML = '';
     rows.forEach((r, i) => {
       const row = document.createElement('div'); row.className = 'rankRow cutbox' + (r.id === NET.uid ? ' me' : '');
       const pos = document.createElement('b'); pos.textContent = '#' + (i + 1);
-      const nm = document.createElement('span'); nm.textContent = String(r.n || 'Gracz').slice(0, 16) + (r.id === NET.uid ? ' (ty)' : '');
+      const nm = document.createElement('span'); nm.textContent = String(r.n || 'Player').slice(0, 16) + (r.id === NET.uid ? ' (you)' : '');
       const val = document.createElement('em'); val.textContent = num(r[field]) + ' ' + unit;
       row.append(pos, nm, val); box.appendChild(row);
     });
-  } catch (e) { box.innerHTML = '<p class="hint">Nie udało się wczytać rankingu. Spróbuj ponownie później.</p>'; }
+  } catch (e) { box.innerHTML = '<p class="hint">Could not load the leaderboard. Try again later.</p>'; }
 }

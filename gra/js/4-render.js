@@ -11,7 +11,7 @@ function resize() {
   cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
   const cs = getComputedStyle(document.getElementById('probe'));
   safe.t = parseFloat(cs.paddingTop) || 0; safe.r = parseFloat(cs.paddingRight) || 0; safe.b = parseFloat(cs.paddingBottom) || 0; safe.l = parseFloat(cs.paddingLeft) || 0;
-  U = clamp(Math.min(H / 420, W / 820), .72, 1.45);
+  U = clamp(Math.min(H / 420, W / 820), .72, 1.45) * ({ s: .85, m: 1, l: 1.18 }[save.settings.ui] || 1);
   LM = mk(Math.ceil(W * LMS), Math.ceil(H * LMS)); LMC = LM.getContext('2d');
   VIG = mk(W, H); let g = VIG.getContext('2d');
   g.fillStyle = RG(g, W / 2, H / 2, Math.min(W, H) * .35, W / 2, H / 2, Math.max(W, H) * .75, [[0, 'rgba(0,0,0,0)'], [1, 'rgba(0,0,0,.6)']]); g.fillRect(0, 0, W, H);
@@ -19,6 +19,11 @@ function resize() {
   g.fillStyle = RG(g, W / 2, H / 2, Math.min(W, H) * .3, W / 2, H / 2, Math.max(W, H) * .7, [[0, 'rgba(255,0,40,0)'], [1, 'rgba(255,20,50,.75)']]); g.fillRect(0, 0, W, H);
 }
 function hudLayout() {
+  const L = hudLayoutRaw();
+  if (save.settings.lefty) for (const k of ['aim', 'move', 'dash', 'gren', 'abil']) L[k].x = W - L[k].x;
+  return L;
+}
+function hudLayoutRaw() {
   const u = U;
   const aim = { x: W - safe.r - 118 * u, y: H - safe.b - 108 * u, r: 62 * u };
   return {
@@ -42,7 +47,7 @@ function render() {
   ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
   ctx.fillStyle = '#060a13'; ctx.fillRect(0, 0, W, H);
   if (!G) return;
-  const c = G.cam, z = c.z, sx = (Math.random() - .5) * G.shake, sy = (Math.random() - .5) * G.shake;
+  const c = G.cam, z = c.z, shk = save.settings.shake ? G.shake : 0, sx = (Math.random() - .5) * shk, sy = (Math.random() - .5) * shk;
   const v = viewRect(), now = G.t;
   ctx.setTransform(DPR * z, 0, 0, DPR * z, DPR * (W / 2 + sx) - c.x * DPR * z, DPR * (H / 2 + sy) - c.y * DPR * z);
   // podłoże
@@ -243,7 +248,7 @@ function render() {
   }
   for (const r of G.remotes.values()) if (!r.dead && inView(r.x, r.y, 60)) {
     const enemy = G.mode === 'pvp', w = 44, x = r.x - w / 2, y = r.y - 40;
-    ctext(r.nick || 'Gracz', r.x, y - 10, 12, enemy ? '#ffb0bd' : '#bfffd0', 'center', FU);
+    ctext(r.nick || 'Player', r.x, y - 10, 12, enemy ? '#ffb0bd' : '#bfffd0', 'center', FU);
     if (r.cos && COS[r.cos.title]) ctext(COS[r.cos.title].name, r.x, y - 23, 9, RAR[COS[r.cos.title].r].col, 'center', FU);
     ctx.fillStyle = 'rgba(0,0,0,.6)'; ctx.fillRect(x - 1, y - 1, w + 2, 7);
     ctx.fillStyle = enemy ? '#ff4d6d' : '#7dff8a'; ctx.fillRect(x, y, w * clamp(r.hp / (r.maxHp || 100), 0, 1), 5);

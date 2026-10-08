@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pl">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
@@ -7,7 +7,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#060a13">
 <!--ARTIFACT-START-->
-<title>Strefa Zero</title>
+<title>Zone Zero</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Russo+One&family=Chakra+Petch:wght@500;600;700&display=swap" rel="stylesheet">
@@ -66,6 +66,9 @@ button { font: inherit; color: inherit; }
 .coins { display: inline-flex; align-items: center; gap: 8px; font-family: var(--display); font-size: 20px; color: #ffe08a; font-variant-numeric: tabular-nums;
   padding: 6px 14px; background: var(--panel); box-shadow: inset 0 0 0 1px var(--line); }
 .coin { width: 18px; height: 18px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #fff6c4, #ffc93c 45%, #b8741a); box-shadow: 0 0 10px rgba(255,190,60,.6); display: inline-block; }
+.topRight { display: flex; gap: 8px; align-items: center; z-index: 2; }
+.iconBtn { width: 44px; height: 40px; padding: 0; display: grid; place-items: center; }
+.iconBtn svg { width: 22px; height: 22px; }
 .topRight { position: absolute; top: max(10px, env(safe-area-inset-top, 0px)); right: max(16px, env(safe-area-inset-right, 0px)); }
 
 .btn {
@@ -195,9 +198,11 @@ button { font: inherit; color: inherit; }
 .tile.surv { --tbg: linear-gradient(160deg, #6a1a2a, #2a0a14); --ic: #ff6a8a; }
 .tile.daily { --tbg: linear-gradient(160deg, #1a4a6a, #0a1a2e); --ic: #7fd8ff; }
 .tile.online { --tbg: linear-gradient(160deg, #1f6a4a, #082418); --ic: #8dff6a; }
-.subBtns { display: flex; gap: 8px; flex-wrap: wrap; width: min(640px, 92vw); }
-.subBtns .btn { flex: 1 1 0; min-width: 120px; text-align: center; font-size: clamp(13px, 3.6vh, 16px); padding: .55em .8em; }
+.subBtns { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; width: min(640px, 92vw); }
+.subBtns .btn { min-width: 0; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: .02em; padding-inline: .4em; font-size: clamp(13px, 3.6vh, 16px); padding: .55em .8em; }
 .badge { position: absolute; top: 6px; right: 8px; font-size: 10px; letter-spacing: .1em; text-transform: uppercase; padding: 2px 6px; background: rgba(0,0,0,.4); color: #8dff6a; }
+@media (min-width: 1200px) and (min-height: 700px) { .screen > * { zoom: 1.3; } }
+@media (min-width: 1700px) and (min-height: 950px) { .screen > * { zoom: 1.6; } }
 @media (max-width: 700px) { .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-height: 400px) { .tile small { display: none; } .kicker { display: none; } }
 
@@ -263,8 +268,8 @@ button { font: inherit; color: inherit; }
 .cItem.lock { filter: grayscale(.85) brightness(.55); }
 .cItem.lock::after { content: '?'; position: absolute; top: 18px; left: 0; right: 0; text-align: center; font-family: var(--display); font-size: 26px; color: rgba(255,255,255,.75); }
 .cItem.eq { box-shadow: inset 0 -3px 0 var(--rc), inset 0 0 0 2px var(--cyan); }
-.cItem.eq::before { content: 'Założone'; position: absolute; top: 3px; left: 3px; font-size: 8px; letter-spacing: .08em; text-transform: uppercase; background: var(--cyan); color: #021820; padding: 1px 4px; }
-.cItem.new::before { content: 'Nowe'; position: absolute; top: 3px; left: 3px; font-size: 8px; letter-spacing: .08em; text-transform: uppercase; background: var(--lime); color: #021820; padding: 1px 4px; }
+.cItem.eq::before { content: 'Equipped'; position: absolute; top: 3px; left: 3px; font-size: 8px; letter-spacing: .08em; text-transform: uppercase; background: var(--cyan); color: #021820; padding: 1px 4px; }
+.cItem.new::before { content: 'New'; position: absolute; top: 3px; left: 3px; font-size: 8px; letter-spacing: .08em; text-transform: uppercase; background: var(--lime); color: #021820; padding: 1px 4px; }
 .cItem.sel { outline: 2px solid #fff; outline-offset: -2px; }
 .cItem:focus-visible { outline: 2px solid var(--cyan); }
 .detail { display: flex; gap: 10px; align-items: center; padding: 8px 10px; background: var(--panel); box-shadow: inset 0 0 0 1px var(--line); flex: 0 0 auto; min-height: 52px; }
@@ -295,6 +300,19 @@ button { font: inherit; color: inherit; }
 .dot { position: absolute; top: -6px; right: -4px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--rose); color: #fff; font-family: var(--ui); font-size: 11px; line-height: 18px; text-align: center; }
 @media (max-width: 640px) { .collGrid { grid-template-columns: minmax(0, 1fr); } }
 @media (prefers-reduced-motion: reduce) { .bigCrate.shake, .rCard { animation: none; } }
+
+/* ---- Jak grać ---- */
+.helpGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; width: 100%; max-width: 1100px; }
+.helpCol { min-width: 0; padding: 12px 14px; background: var(--panel); box-shadow: inset 0 0 0 1px var(--line); display: flex; flex-direction: column; gap: 6px; }
+.helpCol h3 { margin: 0 0 2px; font-size: 12px; letter-spacing: .2em; text-transform: uppercase; color: var(--cyan); display: flex; align-items: center; gap: 8px; }
+.helpCol h3 svg { width: 18px; height: 18px; }
+.kv { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 10px; font-size: 13px; line-height: 1.3; align-items: baseline; }
+.kv kbd { font-family: var(--ui); font-weight: 700; font-size: 11px; padding: 2px 7px; border-radius: 4px; background: rgba(255,255,255,.1); box-shadow: inset 0 -2px 0 rgba(0,0,0,.4); color: var(--text); white-space: nowrap; justify-self: start; }
+.kv span { color: #c4d4ee; font-weight: 500; }
+.tips { width: 100%; max-width: 1100px; display: flex; gap: 8px; flex-wrap: wrap; }
+.tips p { flex: 1 1 220px; margin: 0; padding: 8px 12px; font-size: 12px; font-weight: 500; color: #c4d4ee; background: rgba(20,34,60,.7); box-shadow: inset 2px 0 0 var(--amber); line-height: 1.35; }
+.tips b { color: var(--amber); }
+@media (max-width: 760px) { .helpGrid { grid-template-columns: minmax(0, 1fr); } }
 #sRotate { display: none; z-index: 30; justify-content: center; background: var(--void); text-align: center; }
 #sRotate .phone { width: 50px; height: 86px; border: 4px solid var(--cyan); border-radius: 10px; box-shadow: 0 0 20px rgba(62,240,255,.5); animation: turn 1.8s ease-in-out infinite; }
 @keyframes turn { 0%, 30% { transform: rotate(0); } 60%, 100% { transform: rotate(-90deg); } }
@@ -310,30 +328,33 @@ button { font: inherit; color: inherit; }
 <div id="probe"></div>
 
 <section id="sMenu" class="screen menu">
-  <div class="topRight"><span class="coins"><i class="coin"></i><span id="mCoins">0</span></span></div>
+  <div class="topRight">
+    <button id="bHelp" class="btn ghost iconBtn" type="button" aria-label="How to play" title="How to play"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="9.5"/><path d="M9.3 9.2a2.8 2.8 0 1 1 3.9 2.6c-.8.4-1.2 1-1.2 1.9v.6"/><circle cx="12" cy="17.3" r=".6" fill="currentColor"/></svg></button>
+    <button id="bSet" class="btn ghost iconBtn" type="button" aria-label="Settings" title="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/></svg></button>
+    <span class="coins"><i class="coin"></i><span id="mCoins">0</span></span>
+  </div>
   <div class="menuMain">
-    <p class="kicker">9 misji · przetrwanie · wyzwanie dnia · gra online</p>
-    <h1 class="logo">Strefa<span>Zero</span></h1>
+    <p class="kicker">9 missions · survival · daily challenge · online play</p>
+    <h1 class="logo">Zone<span>Zero</span></h1>
     <div class="tiles">
-      <button id="bPlay" class="tile main" type="button"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2 4 6v6c0 5 3.4 9 8 10 4.6-1 8-5 8-10V6z"/></svg><b>Misje</b><small>Kampania i bossowie</small></button>
-      <button id="bSurv" class="tile surv" type="button"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2c1.2 4.2 6.5 6.4 6.5 12.3A6.5 6.5 0 0 1 5.5 14.3c0-3 1.8-5 3-6.2 0 2 1 3.2 2.2 3.4C10.6 7.7 10.2 5 12 2z"/></svg><b>Przetrwanie</b><small>Fale bez końca</small></button>
-      <button id="bDaily" class="tile daily" type="button"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path stroke="currentColor" stroke-width="2" d="M3 10h18M8 3v4M16 3v4"/><circle cx="12" cy="15" r="2.5" fill="currentColor"/></svg><b>Wyzwanie dnia</b><small id="dailySub">Nowe co dzień</small></button>
-      <button id="bOnline" class="tile online" type="button"><span class="badge" id="onlineBadge" hidden>0 online</span><svg viewBox="0 0 24 24"><circle cx="8" cy="8" r="3.5" fill="currentColor"/><circle cx="17" cy="9" r="2.8" fill="currentColor"/><path fill="currentColor" d="M1.5 20c.5-4 3.2-6 6.5-6s6 2 6.5 6zM14 20c.2-2.5-.6-4.2-1.8-5.3 1.2-.6 2.8-.8 4.3-.5 2.8.5 5 2.6 5 5.8z"/></svg><b>Online</b><small>Kooperacja i PvP</small></button>
+      <button id="bPlay" class="tile main" type="button"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2 4 6v6c0 5 3.4 9 8 10 4.6-1 8-5 8-10V6z"/></svg><b>Missions</b><small>Campaign and bosses</small></button>
+      <button id="bSurv" class="tile surv" type="button"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2c1.2 4.2 6.5 6.4 6.5 12.3A6.5 6.5 0 0 1 5.5 14.3c0-3 1.8-5 3-6.2 0 2 1 3.2 2.2 3.4C10.6 7.7 10.2 5 12 2z"/></svg><b>Survival</b><small>Endless waves</small></button>
+      <button id="bDaily" class="tile daily" type="button"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path stroke="currentColor" stroke-width="2" d="M3 10h18M8 3v4M16 3v4"/><circle cx="12" cy="15" r="2.5" fill="currentColor"/></svg><b>Daily</b><small id="dailySub">New every day</small></button>
+      <button id="bOnline" class="tile online" type="button"><span class="badge" id="onlineBadge" hidden>0 online</span><svg viewBox="0 0 24 24"><circle cx="8" cy="8" r="3.5" fill="currentColor"/><circle cx="17" cy="9" r="2.8" fill="currentColor"/><path fill="currentColor" d="M1.5 20c.5-4 3.2-6 6.5-6s6 2 6.5 6zM14 20c.2-2.5-.6-4.2-1.8-5.3 1.2-.6 2.8-.8 4.3-.5 2.8.5 5 2.6 5 5.8z"/></svg><b>Online</b><small>Co-op and PvP</small></button>
     </div>
     <div class="subBtns">
-      <button id="bColl" class="btn primary" type="button">Kolekcja<span class="dot" id="crateDot" hidden>0</span></button>
-      <button id="bShop" class="btn" type="button">Zbrojownia</button>
-      <button id="bAch" class="btn" type="button">Osiągnięcia</button>
-      <button id="bRank" class="btn" type="button">Ranking</button>
-      <button id="bSet" class="btn ghost" type="button">Ustawienia</button>
+      <button id="bColl" class="btn primary" type="button">Collection<span class="dot" id="crateDot" hidden>0</span></button>
+      <button id="bShop" class="btn" type="button">Armory</button>
+      <button id="bAch" class="btn" type="button">Awards</button>
+      <button id="bRank" class="btn" type="button">Leaderboard</button>
     </div>
   </div>
 </section>
 
 <section id="sLevels" class="screen" hidden>
   <div class="head">
-    <button class="btn ghost back" data-back type="button" aria-label="Wróć"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 5l-7 7 7 7"/></svg></button>
-    <h2>Wybierz misję</h2>
+    <button class="btn ghost back" data-back type="button" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 5l-7 7 7 7"/></svg></button>
+    <h2>Choose a mission</h2>
     <span class="coins"><i class="coin"></i><span class="coinVal">0</span></span>
   </div>
   <div class="body"><div class="biomes" id="biomes"></div></div>
@@ -341,43 +362,44 @@ button { font: inherit; color: inherit; }
 
 <section id="sShop" class="screen" hidden>
   <div class="head">
-    <button class="btn ghost back" data-back type="button" aria-label="Wróć"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 5l-7 7 7 7"/></svg></button>
-    <h2>Zbrojownia</h2>
+    <button class="btn ghost back" data-back type="button" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 5l-7 7 7 7"/></svg></button>
+    <h2>Armory</h2>
     <span class="coins"><i class="coin"></i><span class="coinVal">0</span></span>
   </div>
   <div class="body shop">
-    <div class="col"><div class="tabs" id="shopTabs"><button class="btn on" data-tab="w" type="button">Broń</button><button class="btn" data-tab="h" type="button">Bohaterowie</button></div><div class="list" id="wList"></div></div>
-    <div class="col"><h3>Ulepszenia na stałe</h3><div class="list" id="uList"></div></div>
+    <div class="col"><div class="tabs" id="shopTabs"><button class="btn on" data-tab="w" type="button">Weapons</button><button class="btn" data-tab="h" type="button">Heroes</button></div><div class="list" id="wList"></div></div>
+    <div class="col"><h3>Permanent upgrades</h3><div class="list" id="uList"></div></div>
   </div>
 </section>
 
 <section id="sSet" class="screen" hidden>
   <div class="head">
-    <button class="btn ghost back" data-back type="button" aria-label="Wróć"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 5l-7 7 7 7"/></svg></button>
-    <h2>Ustawienia</h2>
+    <button class="btn ghost back" data-back type="button" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 5l-7 7 7 7"/></svg></button>
+    <h2>Settings</h2>
   </div>
   <div class="body"><div class="settings" id="setList"></div></div>
 </section>
 
 <section id="sLvlUp" class="screen overlay" hidden>
-  <p class="kicker" id="luKick">Awans</p>
-  <h2 class="ovTitle" id="luTitle">Poziom 2</h2>
+  <p class="kicker" id="luKick">Level up</p>
+  <h2 class="ovTitle" id="luTitle">Level 2</h2>
   <div class="perks" id="perks"></div>
 </section>
 
 <section id="sPause" class="screen overlay" hidden>
-  <h2 class="ovTitle">Pauza</h2>
+  <h2 class="ovTitle">Paused</h2>
   <div class="perkMini" id="pausePerks"></div>
   <div class="row">
-    <button id="bResume" class="btn primary" type="button">Wznów</button>
-    <button id="bRestart" class="btn" type="button">Od nowa</button>
-    <button id="bQuit" class="btn ghost" type="button">Wyjdź z misji</button>
+    <button id="bResume" class="btn primary" type="button">Resume</button>
+    <button id="bRestart" class="btn" type="button">Restart</button>
+    <button id="bPauseHelp" class="btn ghost" type="button">How to play</button>
+    <button id="bQuit" class="btn ghost" type="button">Quit</button>
   </div>
 </section>
 
 <section id="sResult" class="screen overlay" hidden>
-  <p class="kicker" id="rKick">Misja 1</p>
-  <h2 class="ovTitle" id="rTitle">Misja ukończona</h2>
+  <p class="kicker" id="rKick">Mission 1</p>
+  <h2 class="ovTitle" id="rTitle">Mission complete</h2>
   <div class="resStars" id="rStars"></div>
   <div class="resStats" id="rStats"></div>
   <div class="row" id="rBtns"></div>
@@ -385,45 +407,45 @@ button { font: inherit; color: inherit; }
 
 
 <section id="sOnline" class="screen" hidden>
-  <div class="head"><button class="btn ghost back" data-back type="button" aria-label="Wróć"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 5l-7 7 7 7"/></svg></button><h2>Gra online</h2><span class="coins"><i class="coin"></i><span class="coinVal">0</span></span></div>
+  <div class="head"><button class="btn ghost back" data-back type="button" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 5l-7 7 7 7"/></svg></button><h2>Online play</h2><span class="coins"><i class="coin"></i><span class="coinVal">0</span></span></div>
   <div class="body twoCol">
     <div class="card cutbox">
-      <h3>Twój żołnierz</h3>
-      <div class="field"><label for="nickIn">Ksywka</label><input id="nickIn" maxlength="14" autocomplete="off" placeholder="Wpisz ksywkę"></div>
-      <p class="hint" id="onlineStatus">Łączenie…</p>
-      <h3>Nowy pokój</h3>
+      <h3>Your soldier</h3>
+      <div class="field"><label for="nickIn">Nickname</label><input id="nickIn" maxlength="14" autocomplete="off" placeholder="Enter a nickname"></div>
+      <p class="hint" id="onlineStatus">Connecting…</p>
+      <h3>New room</h3>
       <div class="field">
-        <button class="btn primary small" id="bHostCoop" type="button">Kooperacja</button>
-        <button class="btn small" id="bHostPvp" type="button">Pojedynek PvP</button>
+        <button class="btn primary small" id="bHostCoop" type="button">Co-op</button>
+        <button class="btn small" id="bHostPvp" type="button">PvP Duel</button>
       </div>
-      <h3>Dołącz kodem</h3>
-      <div class="field"><input id="codeIn" maxlength="8" autocomplete="off" placeholder="np. k7m2q"><button class="btn small" id="bJoin" type="button">Dołącz</button></div>
+      <h3>Join with a code</h3>
+      <div class="field"><input id="codeIn" maxlength="8" autocomplete="off" placeholder="e.g. k7m2q"><button class="btn small" id="bJoin" type="button">Join</button></div>
     </div>
     <div class="card cutbox">
-      <h3>Otwarte pokoje</h3>
+      <h3>Open rooms</h3>
       <div class="roomList" id="roomList"></div>
     </div>
   </div>
 </section>
 
 <section id="sRoom" class="screen" hidden>
-  <div class="head"><button class="btn ghost back" id="bLeaveRoom" type="button" aria-label="Opuść pokój"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 5l-7 7 7 7"/></svg></button><h2 id="roomTitle">Pokój</h2><span class="code" id="roomCode">-----</span></div>
+  <div class="head"><button class="btn ghost back" id="bLeaveRoom" type="button" aria-label="Leave room"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 5l-7 7 7 7"/></svg></button><h2 id="roomTitle">Room</h2><span class="code" id="roomCode">-----</span></div>
   <div class="body twoCol">
     <div class="card cutbox">
-      <h3>Gracze</h3>
+      <h3>Players</h3>
       <div class="plist" id="plist"></div>
-      <p class="hint">Podaj znajomym kod pokoju. Muszą mieć dostęp do tej gry (udostępnij ją w aplikacji Claude).</p>
+      <p class="hint">Give your friends the room code. They need access to this game (share it from the Claude app).</p>
     </div>
     <div class="card cutbox" id="roomCtl"></div>
   </div>
 </section>
 
 <section id="sRank" class="screen" hidden>
-  <div class="head"><button class="btn ghost back" data-back type="button" aria-label="Wróć"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 5l-7 7 7 7"/></svg></button><h2>Ranking</h2></div>
+  <div class="head"><button class="btn ghost back" data-back type="button" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 5l-7 7 7 7"/></svg></button><h2>Leaderboard</h2></div>
   <div class="body" style="display:flex;flex-direction:column;gap:10px;max-width:700px">
     <div class="tabs" id="rankTabs">
-      <button class="btn on" data-tab="surv" type="button">Przetrwanie</button>
-      <button class="btn" data-tab="daily" type="button">Wyzwanie dnia</button>
+      <button class="btn on" data-tab="surv" type="button">Survival</button>
+      <button class="btn" data-tab="daily" type="button">Daily Challenge</button>
       <button class="btn" data-tab="pvp" type="button">PvP</button>
     </div>
     <div class="rankList" id="rankList"></div>
@@ -431,23 +453,23 @@ button { font: inherit; color: inherit; }
 </section>
 
 <section id="sAch" class="screen" hidden>
-  <div class="head"><button class="btn ghost back" data-back type="button" aria-label="Wróć"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 5l-7 7 7 7"/></svg></button><h2>Osiągnięcia</h2><span class="coins"><i class="coin"></i><span class="coinVal">0</span></span></div>
+  <div class="head"><button class="btn ghost back" data-back type="button" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 5l-7 7 7 7"/></svg></button><h2>Awards</h2><span class="coins"><i class="coin"></i><span class="coinVal">0</span></span></div>
   <div class="body twoCol">
-    <div class="card cutbox"><h3>Statystyki</h3><div class="statGrid" id="statGrid"></div></div>
-    <div class="card cutbox"><h3 id="achCount">Osiągnięcia</h3><div class="achList" id="achList"></div></div>
+    <div class="card cutbox"><h3>Stats</h3><div class="statGrid" id="statGrid"></div></div>
+    <div class="card cutbox"><h3 id="achCount">Achievements</h3><div class="achList" id="achList"></div></div>
   </div>
 </section>
 
 <section id="sDaily" class="screen overlay" hidden>
-  <p class="kicker" id="dKick">Wyzwanie dnia</p>
-  <h2 class="ovTitle" id="dTitle">Wyzwanie dnia</h2>
+  <p class="kicker" id="dKick">Daily Challenge</p>
+  <h2 class="ovTitle" id="dTitle">Daily Challenge</h2>
   <div class="mods" id="dMods"></div>
   <p class="hint" id="dBest" style="text-align:center"></p>
-  <div class="row"><button class="btn primary" id="bDailyGo" type="button">Start</button><button class="btn ghost" data-back type="button">Wróć</button></div>
+  <div class="row"><button class="btn primary" id="bDailyGo" type="button">Start</button><button class="btn ghost" data-back type="button">Back</button></div>
 </section>
 
 <section id="sColl" class="screen" hidden>
-  <div class="head"><button class="btn ghost back" data-back type="button" aria-label="Wróć"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 5l-7 7 7 7"/></svg></button><h2>Kolekcja</h2><span class="progress" id="collProg"></span><span class="shards"><i class="shard"></i><span id="shardVal">0</span></span><span class="coins"><i class="coin"></i><span class="coinVal">0</span></span></div>
+  <div class="head"><button class="btn ghost back" data-back type="button" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 5l-7 7 7 7"/></svg></button><h2>Collection</h2><span class="progress" id="collProg"></span><span class="shards"><i class="shard"></i><span id="shardVal">0</span></span><span class="coins"><i class="coin"></i><span class="coinVal">0</span></span></div>
   <div class="collGrid">
     <div class="collLeft">
       <canvas id="prevCv" width="480" height="300"></canvas>
@@ -462,17 +484,66 @@ button { font: inherit; color: inherit; }
 </section>
 
 <section id="sCrate" class="screen overlay" hidden>
-  <p class="kicker" id="crKick">Skrzynia</p>
-  <button class="bigCrate" id="bigCrate" type="button" aria-label="Otwórz skrzynię"></button>
+  <p class="kicker" id="crKick">Crate</p>
+  <button class="bigCrate" id="bigCrate" type="button" aria-label="Open crate"></button>
   <div class="reveal" id="reveal"></div>
   <div class="row" id="crBtns"></div>
+</section>
+
+<section id="sHelp" class="screen" hidden>
+  <div class="head"><button class="btn ghost back" data-back type="button" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 5l-7 7 7 7"/></svg></button><h2>How to play</h2><button class="btn primary small" id="bHelpOk" type="button">Got it</button></div>
+  <div class="helpGrid">
+    <div class="helpCol cutbox">
+      <h3><svg viewBox="0 0 24 24"><rect x="6" y="2" width="12" height="20" rx="3" fill="none" stroke="currentColor" stroke-width="2"/></svg>Touch</h3>
+      <div class="kv">
+        <kbd>Left thumb</kbd><span>Drag anywhere on the left to move</span>
+        <kbd>Right thumb</kbd><span>Drag to aim – you fire while holding</span>
+        <kbd>Quick tap</kbd><span>Short burst at the nearest enemy</span>
+        <kbd>Blue button</kbd><span>Dash – a quick dodge, you can't be hit</span>
+        <kbd>Orange button</kbd><span>Throw a grenade</span>
+        <kbd>Hero button</kbd><span>Use your hero ability</span>
+        <kbd>Weapon panel</kbd><span>Tap to switch weapons</span>
+      </div>
+    </div>
+    <div class="helpCol cutbox">
+      <h3><svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path stroke="currentColor" stroke-width="2" d="M6 10h1M10 10h1M14 10h1M18 10h1M7 14h10"/></svg>Keyboard &amp; mouse</h3>
+      <div class="kv">
+        <kbd>W A S D</kbd><span>Move (arrow keys work too)</span>
+        <kbd>Mouse</kbd><span>Aim · hold left button to fire</span>
+        <kbd>Space / Shift</kbd><span>Dash</span>
+        <kbd>Q / G / right click</kbd><span>Grenade</span>
+        <kbd>F</kbd><span>Hero ability</span>
+        <kbd>E / Tab</kbd><span>Switch weapon</span>
+        <kbd>R</kbd><span>Reload</span>
+        <kbd>Esc / P</kbd><span>Pause</span>
+      </div>
+    </div>
+    <div class="helpCol cutbox">
+      <h3><svg viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" d="M6 8h12a4 4 0 0 1 4 4v3a3 3 0 0 1-5 2l-2-2H9l-2 2a3 3 0 0 1-5-2v-3a4 4 0 0 1 4-4z"/></svg>Controller</h3>
+      <div class="kv">
+        <kbd>Left stick</kbd><span>Move</span>
+        <kbd>Right stick</kbd><span>Aim and fire · or hold RT</span>
+        <kbd>A / LB</kbd><span>Dash</span>
+        <kbd>B / LT</kbd><span>Grenade</span>
+        <kbd>X / RB</kbd><span>Hero ability</span>
+        <kbd>Y</kbd><span>Switch weapon</span>
+        <kbd>Start</kbd><span>Pause · D-pad and A work in menus</span>
+      </div>
+    </div>
+  </div>
+  <div class="tips">
+    <p><b>Level up</b> by collecting green XP crystals, then pick one of three perks.</p>
+    <p><b>Red circles</b> on the ground warn of an incoming attack – get out!</p>
+    <p><b>Crates</b> from missions, survival and awards unlock skins, hats, pets and more.</p>
+    <p><b>Too hard or too easy?</b> Change the difficulty, controls and interface size in Settings.</p>
+  </div>
 </section>
 <div id="toast" aria-live="polite"></div>
 
 <section id="sRotate" class="screen">
   <div class="phone"></div>
-  <h2 class="ovTitle">Obróć telefon</h2>
-  <p class="kicker">Strefa Zero działa tylko w poziomie</p>
+  <h2 class="ovTitle">Rotate your phone</h2>
+  <p class="kicker">Zone Zero is played in landscape</p>
 </section>
 
 <script src="js/1-core.js"></script>
