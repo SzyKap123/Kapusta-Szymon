@@ -27,15 +27,16 @@ function drawWeapon(g, id) {
     g.fillStyle = '#12161c'; g.beginPath(); g.arc(40, 0, 3.5, 0, TAU); g.fill();
   }
 }
-function sprPlayer(wid) {
+function sprPlayer(wid, hero) {
+  const H = HEROES[hero] || HEROES.assault, A = H.armor, V = H.visor;
   return sprite(100, 100, g => {
     const ink = '#0b1018';
     // plecak
     g.fillStyle = LG(g, -20, -10, -8, 10, [[0, '#3a4658'], [1, '#1a212c']]); rrect(g, -21, -11, 13, 22, 4); g.fill(); g.lineWidth = 1.8; g.strokeStyle = ink; g.stroke();
-    g.fillStyle = '#3ef0ff'; g.fillRect(-19, -6, 2.5, 12);
+    g.fillStyle = V; g.fillRect(-19, -6, 2.5, 12);
     // barki
-    g.fillStyle = LG(g, -8, -16, 8, 16, [[0, '#f2f7ff'], [.55, '#a9b9d0'], [1, '#5b6a84']]); ell(g, -1, 0, 11, 16.5); g.fill(); g.lineWidth = 2; g.stroke();
-    g.strokeStyle = '#3ef0ff'; g.lineWidth = 2; g.beginPath(); g.arc(-1, 0, 13, -1.9, -1.2); g.stroke(); g.beginPath(); g.arc(-1, 0, 13, 1.2, 1.9); g.stroke();
+    g.fillStyle = LG(g, -8, -16, 8, 16, [[0, A[0]], [.55, A[1]], [1, A[2]]]); ell(g, -1, 0, 11, 16.5); g.fill(); g.lineWidth = 2; g.stroke();
+    g.strokeStyle = V; g.lineWidth = 2; g.beginPath(); g.arc(-1, 0, 13, -1.9, -1.2); g.stroke(); g.beginPath(); g.arc(-1, 0, 13, 1.2, 1.9); g.stroke();
     // ręce
     g.strokeStyle = ink; g.lineWidth = 7.5; g.beginPath(); g.moveTo(0, -12); g.lineTo(12, -2); g.moveTo(0, 12); g.lineTo(11, 5); g.stroke();
     g.strokeStyle = '#c3d0e2'; g.lineWidth = 5; g.beginPath(); g.moveTo(0, -12); g.lineTo(12, -2); g.moveTo(0, 12); g.lineTo(11, 5); g.stroke();
@@ -44,9 +45,11 @@ function sprPlayer(wid) {
     // hełm
     g.fillStyle = RG(g, -2, -4, 1, 1, 0, 11, [[0, '#ffffff'], [.5, '#c9d6e8'], [1, '#55627a']]); g.beginPath(); g.arc(1, 0, 10.5, 0, TAU); g.fill(); g.lineWidth = 2; g.strokeStyle = ink; g.stroke();
     g.strokeStyle = '#0e2a33'; g.lineWidth = 6; g.beginPath(); g.arc(1, 0, 7.5, -1, 1); g.stroke();
-    g.strokeStyle = '#3ef0ff'; g.lineWidth = 3.6; g.beginPath(); g.arc(1, 0, 7.5, -.95, .95); g.stroke();
+    g.strokeStyle = V; g.lineWidth = 3.6; g.beginPath(); g.arc(1, 0, 7.5, -.95, .95); g.stroke();
     g.strokeStyle = 'rgba(255,255,255,.85)'; g.lineWidth = 1.2; g.beginPath(); g.arc(1, 0, 8.2, -.8, -.3); g.stroke();
-    g.fillStyle = '#3ef0ff'; g.fillRect(-7, -1, 5, 2);
+    g.fillStyle = V; g.fillRect(-7, -1, 5, 2);
+    if (hero === 'medic') { g.fillStyle = '#ff4d6d'; g.fillRect(-6, -9, 2, 6); g.fillRect(-8, -7, 6, 2); }
+    if (hero === 'engineer') { g.fillStyle = '#2a2a2a'; g.fillRect(-4, -12, 6, 3); }
   });
 }
 function shade(g, cx, cy, r, c0, c1, c2) { return RG(g, cx - r * .35, cy - r * .4, r * .05, cx, cy, r, [[0, c0], [.55, c1], [1, c2]]); }
@@ -184,6 +187,16 @@ function buildSprites(bi) {
   const p = BIOMES[bi].pal;
   const s = { crawler: sprCrawler(p), drone: sprDrone(p), bomber: sprBomber(p), tank: sprTankE(p), sniper: sprSniper(p) };
   s.queen = sprQueen(BIOMES[0].pal); s.colossus = sprColossus(BIOMES[1].pal); s.warden = sprWarden(BIOMES[2].pal);
-  s.player = {}; for (const k of WEAPON_KEYS) s.player[k] = sprPlayer(k);
   return s;
+}
+const PSPR = {};
+function playerSpr(hero, wid) { const k = hero + ':' + wid; return PSPR[k] || (PSPR[k] = sprPlayer(wid, hero)); }
+function sprTurret() {
+  return sprite(60, 60, g => {
+    const ink = '#0b1018';
+    g.fillStyle = '#20262f'; for (let i = 0; i < 3; i++) { const a = i / 3 * TAU + .5; g.save(); g.rotate(a); rrect(g, 4, -3, 18, 6, 2); g.fill(); g.restore(); }
+    g.fillStyle = LG(g, -12, -12, 12, 12, [[0, '#ffe9b0'], [.5, '#e0a640'], [1, '#7a5218']]); g.beginPath(); g.arc(0, 0, 12, 0, TAU); g.fill(); g.lineWidth = 2; g.strokeStyle = ink; g.stroke();
+    g.fillStyle = '#2a3344'; rrect(g, 4, -3.5, 22, 7, 2); g.fill(); g.stroke();
+    g.fillStyle = '#ffb627'; g.beginPath(); g.arc(0, 0, 4.5, 0, TAU); g.fill();
+  });
 }

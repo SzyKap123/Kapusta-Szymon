@@ -3,37 +3,67 @@
 let G = null, eid = 0;
 const SPR_CACHE = {};
 function getSprites(bi) { return SPR_CACHE[bi] || (SPR_CACHE[bi] = buildSprites(bi)); }
+let TURRET_SPR = null;
 
-function newGame(li, demo) {
-  const L = LEVELS[li], bi = L.biome, map = genMap(bi);
+// mode: demo | mission | survival | daily | coop | pvp
+function newGame(li, demo, opts) {
+  opts = opts || {};
+  const mode = demo ? 'demo' : (opts.mode || 'mission');
+  let L, bi;
+  if (mode === 'mission' || mode === 'coop' || mode === 'demo') { L = LEVELS[li]; bi = L.biome; }
+  else { bi = opts.biome !== undefined ? opts.biome : ri(0, 2); L = { idx: 0, biome: bi, boss: false }; }
+  const seed = opts.seed || (Math.random() * 1e9) >>> 0;
+  const map = withSeed(seed, () => genMap(bi));
+  const mods = new Set(opts.mods || []);
   G = {
-    L, li, bi, B: BIOMES[bi], demo: !!demo, t: 0, spr: getSprites(bi),
+    mode, L, li: L.idx, bi, B: BIOMES[bi], demo: mode === 'demo', t: 0, spr: getSprites(bi), seed, mods,
+    endless: mode === 'survival' || mode === 'daily',
     ground: map.ground, gctx: map.ground.getContext('2d'), props: map.props, hazards: map.hazards, lights: map.lights,
-    enemies: [], pb: [], eb: [], parts: [], pops: [], pickups: [], portals: [], grenades: [], flashes: [], bolts: [], teles: [], beams: [], amb: [],
-    waves: demo ? [] : buildWaves(li, L.boss), wave: -1, queue: [], spawnT: 0, waveDelay: 1.2, banner: null, boss: null,
-    kills: 0, coins: 0, over: null, overT: 0, slow: 1, shake: 0, hurtV: 0,
-    hpMul: 1 + li * .22, dmgMul: 1 + li * .12, cap: 18 + li * 2,
+    enemies: [], pb: [], eb: [], parts: [], pops: [], pickups: [], portals: [], grenades: [], flashes: [], bolts: [], teles: [], beams: [], amb: [], turrets: [], fields: [],
+    waves: (mode === 'mission' || mode === 'coop') ? buildWaves(L.idx, L.boss) : [], wave: -1, queue: [], spawnT: 0, waveDelay: 1.2, banner: null, boss: null,
+    kills: 0, coins: 0, score: 0, over: null, overT: 0, slow: 1, shake: 0, hurtV: 0,
+    hpMul: 1 + L.idx * .22, dmgMul: 1 + L.idx * .12, cap: 18 + L.idx * 2, spdMul: mods.has('fast') ? 1.3 : 1, pDmg: mods.has('glass') ? 1.5 : 1,
+    remotes: new Map(), net: null, pvp: mode === 'pvp' ? { kills: 0, deaths: 0, target: 10, endAt: 300 } : null,
     cam: { x: WW / 2, y: WH / 2, z: 1 }
   };
-  if (!demo) G.player = makePlayer(); else G.player = null;
-  G.cam.x = WW / 2; G.cam.y = WH / 2;
+  if (mods.has('glass')) G.dmgMul *= 1.5;
+  if (!TURRET_SPR) TURRET_SPR = sprTurret();
+  G.player = G.demo ? null : makePlayer(opts.hero || save.hero);
+  if (opts.spawn) { G.player.x = opts.spawn.x; G.player.y = opts.spawn.y; }
+  G.cam.x = G.player ? G.player.x : WW / 2; G.cam.y = G.player ? G.player.y : WH / 2;
   return G;
 }
-function makePlayer() {
-  const up = save.upg;
+function makePlayer(hero) {
+  const up = save.upg, pvp = G.mode === 'pvp';
+  const hp = pvp ? 150 : 100 + up.hp * 20;
   const p = {
-    x: WW / 2, y: WH / 2, vx: 0, vy: 0, r: 18, hp: 100 + up.hp * 20, maxHp: 100 + up.hp * 20, hpShow: 100 + up.hp * 20,
+    x: WW / 2, y: WH / 2, vx: 0, vy: 0, r: 18, hp, maxHp: hp, hpShow: hp, hero, dead: false, respawnT: 0,
     aim: 0, walk: 0, moving: false, weapons: WEAPON_KEYS.filter(k => save.weapons.includes(k)), wi: 0, ammo: {}, reloadT: 0, fireCD: 0,
-    dashCD: 0, dashT: 0, dashDir: 0, inv: 1.2, grenades: 2 + up.gren, xp: 0, lvl: 1, xpNext: 12, kick: 0, firing: false, ghostT: 0, ghosts: [],
+    dashCD: 0, dashT: 0, dashDir: 0, inv: 1.2, grenades: pvp ? 2 : 2 + up.gren, xp: 0, lvl: 1, xpNext: 12, kick: 0, firing: false, ghostT: 0, ghosts: [],
+    abCD: HEROES[hero].cd * .4, fury: 0, lastHit: null, lastHurtT: -9,
     mods: { dmg: 1, rate: 1, multi: 0, pierce: 0, bounce: 0, vamp: 0, speed: 1, orbs: 0, burn: 0, chain: 0, crit: .05, boom: 0, magnet: 1 },
-    perkLv: {}, orbAng: 0, lavaT: 0, regen: 0
+    perkLv: {}, orbAng: 0, lavaT: 0
   };
   p.wi = Math.max(0, p.weapons.length - 1);
   for (const k of p.weapons) p.ammo[k] = WEAPONS[k].mag;
   return p;
 }
 const curW = p => WEAPONS[p.weapons[p.wi]];
-const dmgScale = () => G.player.mods.dmg * (1 + .1 * save.upg.dmg);
+const dmgScale = () => G.player.mods.dmg * (1 + .1 * save.upg.dmg) * G.pDmg * (G.player.fury > 0 ? 1.4 : 1) * (G.mode === 'pvp' ? .6 : 1);
+const pAlive = () => !!(G && G.player && !G.player.dead);
+// cele dla wrogów: lokalny gracz + gracze zdalni
+function actors() {
+  const a = [];
+  if (pAlive()) a.push(G.player);
+  for (const r of G.remotes.values()) if (!r.dead) a.push(r);
+  for (const t of G.turrets) a.push(t);
+  return a;
+}
+function nearestActor(x, y) {
+  let best = null, bd = 1e9;
+  for (const a of actors()) { const d = hyp(a.x - x, a.y - y) * (a.turret ? 1.4 : 1); if (d < bd) { bd = d; best = a; } }
+  return best;
+}
 
 // ================= Cząsteczki =================
 function part(o) {
@@ -111,26 +141,35 @@ function los(ax, ay, bx, by) {
   return true;
 }
 function freeSpot(x, y, r) { return x > M + r && y > M + r && x < WW - M - r && y < WH - M - r && !propAt(x, y, r + 6); }
+function randomFreeSpot(r) { for (let k = 0; k < 200; k++) { const x = rand(M + 80, WW - M - 80), y = rand(M + 80, WH - M - 80); if (freeSpot(x, y, r)) return { x, y }; } return { x: WW / 2, y: WH / 2 }; }
 
-// ================= Gracz =================
+// ================= Strzały =================
+// spawnShot tworzy pociski salwy; używane lokalnie i dla zdalnych graczy (remote = tylko wizualne lub PvP)
+function spawnShot(owner, wid, x, y, aim, multi, seed, remote) {
+  const w = WEAPONS[wid], n = w.pellets + multi * (w.pellets > 1 ? 2 : 1);
+  const fan = w.pellets > 1 ? w.spread + multi * .08 : .13 * (n - 1);
+  const rr = mulberry(seed);
+  const dm = remote ? 0 : w.dmg * dmgScale();
+  const p = owner;
+  for (let i = 0; i < n; i++) {
+    const a = aim + (n > 1 ? -fan / 2 + fan * i / (n - 1) : 0) + (rr() - .5) * w.spread * (w.pellets > 1 ? .35 : 1);
+    const sp = w.spd * (.95 + rr() * .1);
+    G.pb.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: (w.range || 750) / sp, dmg: dm, r: w.r, color: w.color,
+      pierce: (w.pierce || 0) + (remote ? 0 : p.mods.pierce), bounce: remote ? 0 : p.mods.bounce, explode: w.explode || 0, hit: new Set(), rail: wid === 'rail', rocket: wid === 'rocket', remote: !!remote, owner: remote ? owner.peer : 'me' });
+  }
+  flash(x, y, 70, w.color, .07);
+  part({ x, y, life: .07, size: 18, color: w.color, type: 'dot' });
+}
 function playerShoot(p) {
   const id = p.weapons[p.wi], w = WEAPONS[id];
   if (p.reloadT > 0 || p.fireCD > 0) return;
   if (p.ammo[id] <= 0) { startReload(p); return; }
-  p.ammo[id]--; p.fireCD = 1 / (w.rate * p.mods.rate);
-  const multi = p.mods.multi, n = w.pellets + multi * (w.pellets > 1 ? 2 : 1);
-  const fan = w.pellets > 1 ? w.spread + multi * .08 : .13 * (n - 1);
+  p.ammo[id]--; p.fireCD = 1 / (w.rate * p.mods.rate * (p.fury > 0 ? 1.6 : 1));
   const mx = p.x + Math.cos(p.aim) * 32 + Math.cos(p.aim + 1.57) * 5, my = p.y + Math.sin(p.aim) * 32 + Math.sin(p.aim + 1.57) * 5;
-  const dm = w.dmg * dmgScale();
-  for (let i = 0; i < n; i++) {
-    const a = p.aim + (n > 1 ? -fan / 2 + fan * i / (n - 1) : 0) + rand(-w.spread / 2, w.spread / 2) * (w.pellets > 1 ? .35 : 1);
-    const sp = w.spd * rand(.95, 1.05);
-    G.pb.push({ x: mx, y: my, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: (w.range || 750) / sp, dmg: dm, r: w.r, color: w.color,
-      pierce: (w.pierce || 0) + p.mods.pierce, bounce: p.mods.bounce, explode: w.explode || 0, hit: new Set(), rail: id === 'rail', rocket: id === 'rocket' });
-  }
+  const seed = (Math.random() * 1e9) >>> 0;
+  spawnShot(p, id, mx, my, p.aim, p.mods.multi, seed, false);
+  if (G.net) G.net.shot(id, mx, my, p.aim, p.mods.multi, seed);
   p.kick = 1;
-  flash(mx, my, 70, w.color, .07);
-  part({ x: mx, y: my, life: .07, size: 18, color: w.color, type: 'dot' });
   part({ x: p.x, y: p.y, vx: Math.cos(p.aim + 1.9) * rand(80, 140), vy: Math.sin(p.aim + 1.9) * rand(80, 140), vz: 120, z: 8, grav: 600, life: .6, size: 2.5, color: '#e8c060', type: 'chunk', drag: 3, rot: rand(0, 3), vr: 15 });
   if (id === 'shotgun' || id === 'rocket') G.shake = Math.max(G.shake, 4);
   if (id === 'rail') G.shake = Math.max(G.shake, 3);
@@ -138,41 +177,78 @@ function playerShoot(p) {
   if (p.ammo[id] <= 0) startReload(p);
 }
 function startReload(p) { const w = curW(p); if (p.reloadT > 0 || p.ammo[p.weapons[p.wi]] >= w.mag) return; p.reloadT = w.reload; sfx('empty'); }
-function swapWeapon() { const p = G.player; if (!p || p.weapons.length < 2) return; p.wi = (p.wi + 1) % p.weapons.length; p.reloadT = 0; p.fireCD = .15; if (p.ammo[p.weapons[p.wi]] <= 0) startReload(p); sfx('click'); }
+function swapWeapon() { const p = G.player; if (!pAlive() || p.weapons.length < 2) return; p.wi = (p.wi + 1) % p.weapons.length; p.reloadT = 0; p.fireCD = .15; if (p.ammo[p.weapons[p.wi]] <= 0) startReload(p); sfx('click'); }
 function doDash() {
-  const p = G.player; if (!p || p.dashCD > 0 || G.over) return;
+  const p = G.player; if (!pAlive() || p.dashCD > 0 || G.over) return;
   p.dashDir = p.moving ? Math.atan2(p.vy, p.vx) : p.aim;
   p.dashT = .2; p.inv = Math.max(p.inv, .3); p.dashCD = 2.2 * (1 - .12 * save.upg.dash);
   smoke(p.x, p.y, 4, '#8aa0c0', 14); sfx('dash');
 }
 function throwGrenade() {
-  const p = G.player; if (!p || p.grenades <= 0 || G.over) return;
+  const p = G.player; if (!pAlive() || p.grenades <= 0 || G.over) return;
   p.grenades--;
   let tx = p.x + Math.cos(p.aim) * 300, ty = p.y + Math.sin(p.aim) * 300, best = 480;
-  for (const e of G.enemies) { const d = hyp(e.x - p.x, e.y - p.y); if (d < best && Math.abs(angDiff(p.aim, Math.atan2(e.y - p.y, e.x - p.x))) < .8) { best = d; tx = e.x; ty = e.y; } }
+  const targets = G.mode === 'pvp' ? [...G.remotes.values()].filter(r => !r.dead) : G.enemies;
+  for (const e of targets) { const d = hyp(e.x - p.x, e.y - p.y); if (d < best && Math.abs(angDiff(p.aim, Math.atan2(e.y - p.y, e.x - p.x))) < .8) { best = d; tx = e.x; ty = e.y; } }
   tx = clamp(tx, M + 10, WW - M - 10); ty = clamp(ty, M + 10, WH - M - 10);
-  G.grenades.push({ x0: p.x, y0: p.y, x1: tx, y1: ty, t: 0, dur: .65, x: p.x, y: p.y, z: 0 });
+  G.grenades.push({ x0: p.x, y0: p.y, x1: tx, y1: ty, t: 0, dur: .65, x: p.x, y: p.y, z: 0, mine: true });
+  if (G.net) G.net.event(['g', Math.round(p.x), Math.round(p.y), Math.round(tx), Math.round(ty)]);
   sfx('click');
 }
-function hurtPlayer(dmg, raw) {
-  const p = G.player; if (!p || G.over === 'lose') return;
-  if (!raw && (p.inv > 0 || p.dashT > 0)) return;
-  p.hp -= dmg; G.hurtV = Math.min(1, G.hurtV + (raw ? .15 : .7));
-  if (!raw) { p.inv = .55; G.shake = Math.max(G.shake, 7); sfx('hurt'); pop(p.x, p.y - 30, '-' + Math.round(dmg), '#ff4d6d', 17); }
-  if (p.hp <= 0) {
-    p.hp = 0; G.over = 'lose'; G.overT = 0; G.slow = .3;
-    gibs(p.x, p.y, ['#c9d6e8', '#3ef0ff', '#5b6a84'], 26, 320); flash(p.x, p.y, 300, '#3ef0ff', .5); smoke(p.x, p.y, 10, '#2a3040', 30);
-    sfx('lose');
+function useAbility() {
+  const p = G.player; if (!pAlive() || p.abCD > 0 || G.over) return;
+  const H = HEROES[p.hero]; p.abCD = H.cd;
+  if (p.hero === 'assault') { p.fury = 6; flash(p.x, p.y, 260, '#ff6b3d', .4); sparks(p.x, p.y, '#ffb627', 20, 300); sfx('lvl'); pop(p.x, p.y - 40, 'FURIA!', '#ffb627', 20); }
+  else if (p.hero === 'engineer') {
+    const x = clamp(p.x + Math.cos(p.aim) * 40, M + 20, WW - M - 20), y = clamp(p.y + Math.sin(p.aim) * 40, M + 20, WH - M - 20);
+    placeTurret(x, y, true); if (G.net) G.net.event(['t', Math.round(x), Math.round(y)]);
+  } else if (p.hero === 'medic') {
+    placeField(p.x, p.y, true); if (G.net) G.net.event(['f', Math.round(p.x), Math.round(p.y)]);
   }
 }
-function healPlayer(v) { const p = G.player; if (!p) return; const before = p.hp; p.hp = Math.min(p.maxHp, p.hp + v); if (p.hp - before >= 1) pop(p.x, p.y - 34, '+' + Math.round(p.hp - before), '#8dff6a', 15); }
+function placeTurret(x, y, mine) {
+  G.turrets.push({ x, y, r: 16, life: 12, cd: 0, aim: 0, mine, turret: true });
+  sparks(x, y, '#ffb627', 14, 220); sfx('click');
+}
+function placeField(x, y, mine) {
+  G.fields.push({ x, y, r: 150, life: 6, mine });
+  flash(x, y, 300, '#8dff6a', .5); sfx('heal');
+}
+function hurtPlayer(dmg, raw, src) {
+  const p = G.player; if (!pAlive() || G.over) return;
+  if (!raw && (p.inv > 0 || p.dashT > 0)) return;
+  for (const f of G.fields) if (hyp(f.x - p.x, f.y - p.y) < f.r) { dmg *= .45; break; }
+  p.hp -= dmg; p.lastHurtT = G.t; G.hurtV = Math.min(1, G.hurtV + (raw ? .15 : .7));
+  if (src) p.lastHit = src;
+  if (!raw) { if (G.mode !== 'pvp') p.inv = .55; G.shake = Math.max(G.shake, 7); sfx('hurt'); pop(p.x, p.y - 30, '-' + Math.round(dmg), '#ff4d6d', 17); }
+  if (p.hp <= 0) playerDie();
+}
+function playerDie() {
+  const p = G.player;
+  p.hp = 0; p.dead = true; save.stats.deaths++;
+  gibs(p.x, p.y, ['#c9d6e8', HEROES[p.hero].visor, '#5b6a84'], 26, 320); flash(p.x, p.y, 300, HEROES[p.hero].visor, .5); smoke(p.x, p.y, 10, '#2a3040', 30);
+  if (G.mode === 'pvp') { G.pvp.deaths++; p.respawnT = 3; if (G.net) G.net.died(p.lastHit); sfx('hurt'); }
+  else if (G.mode === 'coop') { p.respawnT = 10; sfx('lose'); G.banner = { title: 'Zostałeś pokonany', sub: 'Odrodzisz się za 10 s, jeśli drużyna przetrwa', t: 3, max: 3 }; }
+  else { G.over = 'lose'; G.overT = 0; G.slow = .3; sfx('lose'); }
+}
+function respawnPlayer() {
+  const p = G.player;
+  let s;
+  if (G.mode === 'pvp') s = randomFreeSpot(40);
+  else { const mate = [...G.remotes.values()].find(r => !r.dead); s = mate ? { x: mate.x + 30, y: mate.y + 30 } : randomFreeSpot(40); }
+  p.x = s.x; p.y = s.y; collideWorld(p);
+  p.dead = false; p.hp = G.mode === 'pvp' ? p.maxHp : p.maxHp * .5; p.hpShow = p.hp; p.inv = 2; p.lastHit = null;
+  for (const k of p.weapons) p.ammo[k] = WEAPONS[k].mag;
+  flash(p.x, p.y, 220, HEROES[p.hero].visor, .4); sparks(p.x, p.y, HEROES[p.hero].visor, 20, 260);
+}
+function healPlayer(v) { const p = G.player; if (!pAlive()) return; const before = p.hp; p.hp = Math.min(p.maxHp, p.hp + v); if (p.hp - before >= 1) pop(p.x, p.y - 34, '+' + Math.round(p.hp - before), '#8dff6a', 15); }
 function addXp(v) {
-  const p = G.player; p.xp += v;
+  const p = G.player; if (G.mode === 'pvp') return; p.xp += v;
   while (p.xp >= p.xpNext) { p.xp -= p.xpNext; p.lvl++; p.xpNext = Math.round(p.xpNext * 1.22 + 5); G.pendingLvl = (G.pendingLvl || 0) + 1; }
 }
 function applyPerk(id) {
   const p = G.player, m = p.mods;
-  p.perkLv[id] = (p.perkLv[id] || 0) + 1;
+  p.perkLv[id] = (p.perkLv[id] || 0) + 1; save.stats.perks++;
   switch (id) {
     case 'dmg': m.dmg += .2; break; case 'rate': m.rate += .15; break; case 'multi': m.multi++; break;
     case 'pierce': m.pierce++; break; case 'bounce': m.bounce++; break; case 'vamp': m.vamp += 2; break;
@@ -188,15 +264,20 @@ function hitEnemy(e, dmg, o) {
   o = o || {};
   const p = G.player;
   let crit = false;
-  if (!o.noProc && p && Math.random() < p.mods.crit) { dmg *= 2; crit = true; }
-  e.hp -= dmg; e.flash = .09; e.hb = 2.2;
-  if (o.kx) { const k = e.d.boss ? .1 : e.type === 'tank' ? .35 : 1; e.kx += o.kx * k; e.ky += o.ky * k; }
+  if (!o.noProc && !o.remote && p && Math.random() < p.mods.crit) { dmg *= 2; crit = true; }
+  e.flash = .09; e.hb = 2.2;
   pop(e.x, e.y - e.r - 8, Math.round(dmg) + (crit ? '!' : ''), crit ? '#ffe14d' : (o.color || '#ffffff'), crit ? 20 : 14);
-  if (!o.noProc && p) {
-    if (p.mods.burn) { e.burn = 2.5; e.burnLv = p.mods.burn; }
-    if (p.mods.chain && Math.random() < .14 + .1 * p.mods.chain) chainFrom(e, dmg * .6);
+  const burnLv = !o.noProc && !o.remote && p ? p.mods.burn : (o.burnLv || 0);
+  if (G.net && G.net.guest) { // gość: obrażenia liczy gospodarz
+    G.net.hit(e.id, dmg, burnLv);
+    if (!o.noProc && p && p.mods.chain && Math.random() < .14 + .1 * p.mods.chain) chainFrom(e, dmg * .6);
+    sfx('hit'); return;
   }
-  if (e.hp <= 0) killEnemy(e);
+  e.hp -= dmg;
+  if (o.kx) { const k = e.d.boss ? .1 : e.type === 'tank' ? .35 : 1; e.kx += o.kx * k; e.ky += o.ky * k; }
+  if (burnLv) { e.burn = 2.5; e.burnLv = burnLv; }
+  if (!o.noProc && !o.remote && p && p.mods.chain && Math.random() < .14 + .1 * p.mods.chain) chainFrom(e, dmg * .6);
+  if (e.hp <= 0) killEnemy(e, !o.remote);
   else sfx('hit');
 }
 function chainFrom(e, dmg) {
@@ -213,38 +294,50 @@ function chainFrom(e, dmg) {
     hit.add(best.id); hitEnemy(best, dmg, { noProc: true, color: '#d6ccff' }); cur = best;
   }
 }
-function killEnemy(e) {
-  if (e.dead) return;
-  e.dead = true; G.kills++;
-  const pal = G.B.pal, big = e.d.boss;
+// efekty i łupy po śmierci wroga (wywoływane też u gościa na podstawie zdarzeń gospodarza)
+function enemyDeathFx(x, y, type, mine) {
+  const d = EDEF[type], big = d.boss, r = d.r;
+  const pal = G.B.pal;
   const cols = G.bi === 2 ? ['#cfdcec', '#4a5b74', '#3ec9ff', '#20262f'] : G.bi === 1 ? ['#4a2d28', '#ff7a2e', '#1a0d0b', '#ffd23c'] : [pal.main, pal.dark, pal.light, pal.acc];
-  gibs(e.x, e.y, cols, big ? 60 : 10 + e.r * .4, big ? 500 : 260);
-  sparks(e.x, e.y, G.B.accent, big ? 40 : 8, big ? 600 : 300);
-  flash(e.x, e.y, e.r * 6, G.B.accent, .2);
-  decal(e.x, e.y, G.bi === 2 ? 'scorch' : 'splat', G.bi === 0 ? '#2a4a10' : '#1a0d0b', e.r * 1.4);
+  gibs(x, y, cols, big ? 60 : 10 + r * .4, big ? 500 : 260);
+  sparks(x, y, G.B.accent, big ? 40 : 8, big ? 600 : 300);
+  flash(x, y, r * 6, G.B.accent, .2);
+  decal(x, y, G.bi === 2 ? 'scorch' : 'splat', G.bi === 0 ? '#2a4a10' : '#1a0d0b', r * 1.4);
   sfx('kill');
+  G.kills++; save.stats.kills++; if (big) save.stats.bosses++;
+  G.score += Math.round(d.xp * 10 * (G.endless ? 1 + G.wave * .1 : 1));
   const p = G.player;
-  if (p) {
-    const nx = Math.min(5, e.d.xp);
-    for (let i = 0; i < nx; i++) dropPickup('xp', e.x, e.y, e.d.xp / nx);
-    if (Math.random() < .38 || big) for (let i = 0; i < (big ? 25 : ri(1, 2)); i++) dropPickup('coin', e.x, e.y, 2 + Math.floor(G.li / 2));
-    if (Math.random() < .035) dropPickup('hp', e.x, e.y, 25);
-    if (Math.random() < .025) dropPickup('gren', e.x, e.y, 1);
-    if (p.mods.vamp) healPlayer(p.mods.vamp);
-    if (p.mods.boom && !big) explode(e.x, e.y, 60 + 15 * p.mods.boom, 18 * p.mods.boom * dmgScale(), 'player', G.B.accent, true);
+  if (p && !p.dead) {
+    const nx = Math.min(5, d.xp);
+    for (let i = 0; i < nx; i++) dropPickup('xp', x, y, d.xp / nx);
+    const cv = (2 + Math.floor(G.li / 2)) * (G.mods.has('rich') ? 2 : 1);
+    if (Math.random() < .38 || big) for (let i = 0; i < (big ? 25 : ri(1, 2)); i++) dropPickup('coin', x, y, cv);
+    if (Math.random() < (G.mods.has('rich') ? .015 : .035)) dropPickup('hp', x, y, 25);
+    if (Math.random() < .025) dropPickup('gren', x, y, 1);
+    if (mine && p.mods.vamp) healPlayer(p.mods.vamp);
   }
+}
+function killEnemy(e, mine) {
+  if (e.dead) return;
+  e.dead = true;
+  enemyDeathFx(e.x, e.y, e.type, mine);
+  if (G.net && G.net.host) G.net.kill(e);
+  const p = G.player, big = e.d.boss;
+  if (!big && ((mine && p && p.mods.boom) || G.mods.has('boom'))) explode(e.x, e.y, 60 + 15 * Math.max(1, p ? p.mods.boom : 1), 18 * Math.max(1, p ? p.mods.boom : 1) * (p ? dmgScale() : 1), 'player', G.B.accent, true);
   if (e.type === 'bomber' && !e.blew) explode(e.x, e.y, 70, 28, 'player', '#ff8a3d');
   if (big) { G.boss = null; G.bossDeath = { x: e.x, y: e.y, t: 0 }; G.slow = .35; music.intense = 0; }
 }
-function explode(x, y, R, dmg, src, col, small) {
+function explode(x, y, R, dmg, src, col, small, fromNet) {
   col = col || '#ff8a3d';
+  if (src === 'enemy' && !fromNet && G.net && G.net.host) G.net.event(['x', Math.round(x), Math.round(y), Math.round(R), Math.round(dmg), col]);
   if (src !== 'enemy') for (const e of G.enemies) {
     if (e.dead) continue;
     const d = hyp(e.x - x, e.y - y);
-    if (d < R + e.r) { const a = Math.atan2(e.y - y, e.x - x); hitEnemy(e, dmg * (1 - .45 * d / (R + e.r)), { noProc: true, kx: Math.cos(a) * 260, ky: Math.sin(a) * 260, color: '#ffc080' }); }
+    if (d < R + e.r && dmg > 0) { const a = Math.atan2(e.y - y, e.x - x); hitEnemy(e, dmg * (1 - .45 * d / (R + e.r)), { noProc: true, kx: Math.cos(a) * 260, ky: Math.sin(a) * 260, color: '#ffc080' }); }
   }
   const p = G.player;
-  if (src !== 'player' && p && !G.over) { const d = hyp(p.x - x, p.y - y); if (d < R + p.r) hurtPlayer(dmg * (1 - .4 * d / (R + p.r))); }
+  if (src !== 'player' && pAlive() && dmg > 0) { const d = hyp(p.x - x, p.y - y); if (d < R + p.r) hurtPlayer(dmg * (1 - .4 * d / (R + p.r))); }
+  if (src === 'player' && G.mode === 'pvp' && !fromNet && dmg > 0 && G.net) for (const r of G.remotes.values()) { if (r.dead) continue; const d = hyp(r.x - x, r.y - y); if (d < R + 18) G.net.pvpHit(r.peer, dmg * (1 - .4 * d / (R + 18))); }
   for (const b of G.props) if (b.kind === 'barrel' && !b.fuse && hyp(b.x - x, b.y - y) < R + 17) b.fuse = .12;
   flash(x, y, R * 3.4, '#ffb060', small ? .2 : .35);
   part({ x, y, life: .22, size: R * 1.5, color: '#fff0c0', type: 'dot' });
@@ -260,36 +353,46 @@ function explode(x, y, R, dmg, src, col, small) {
 }
 function dropPickup(type, x, y, v) {
   const a = rand(0, TAU), s = rand(60, 200);
-  G.pickups.push({ type, x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, v, t: rand(0, 6), pull: false, life: type === 'xp' || type === 'coin' ? 40 : 25 });
+  G.pickups.push({ type, x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, v, t: rand(0, 6), pull: G.mode === 'coop' && type !== 'hp', life: type === 'xp' || type === 'coin' ? 40 : 25 });
 }
 
 // ================= Fale i portale =================
 function openPortal(type, x, y, boss) {
   if (x === undefined) {
-    const p = G.player;
+    const al = actors().filter(a => !a.turret), p = al.length ? pick(al) : { x: WW / 2, y: WH / 2 };
     for (let k = 0; k < 40; k++) {
       const a = rand(0, TAU), d = rand(380, 680); x = clamp(p.x + Math.cos(a) * d, M + 60, WW - M - 60); y = clamp(p.y + Math.sin(a) * d, M + 60, WH - M - 60);
-      if (freeSpot(x, y, 36) && hyp(x - p.x, y - p.y) > 300) break;
+      if (freeSpot(x, y, 36) && al.every(q => hyp(x - q.x, y - q.y) > 300)) break;
     }
   }
   G.portals.push({ type, x, y, t: 0, dur: boss ? 2.2 : .9, boss: !!boss });
+  if (G.net && G.net.host) G.net.event(['p', type, Math.round(x), Math.round(y), boss ? 1 : 0]);
   sfx('portal');
 }
 function mkEnemy(type, x, y) {
-  const d = EDEF[type], hp = d.hp * (d.boss ? 1 + G.li * .04 : G.hpMul);
-  const p = G.player;
-  return { id: ++eid, type, d, x, y, vx: 0, vy: 0, kx: 0, ky: 0, r: d.r, hp, maxHp: hp, ang: p ? Math.atan2(p.y - y, p.x - x) : 0, t: 0, walk: rand(0, 6),
+  const d = EDEF[type], hp = d.hp * (d.boss ? (1 + G.li * .04) * (G.endless ? .8 + G.wave * .04 : 1) : G.hpMul) * (G.net && G.net.host ? 1 + .45 * G.remotes.size : 1);
+  return { id: ++eid, type, d, x, y, vx: 0, vy: 0, kx: 0, ky: 0, r: d.r, hp, maxHp: hp, ang: 0, t: 0, walk: rand(0, 6),
     flash: 0, cd: rand(1.2, 2.2), st: 'move', stT: 0, touchCD: 0, burn: 0, burnT: 0, burnLv: 0, orbCD: 0, hb: 0, strafe: Math.random() < .5 ? 1 : -1, strafeT: rand(1, 3),
     pi: -1, pat: null, patT: 0, el: 0, z: 0, spin: 0, dead: false };
 }
+function survivalWave(n) {
+  // n: numer fali od 0; w wyzwaniu dnia fale są takie same dla wszystkich
+  if (G.mode === 'daily' && !G._seeding) { G._seeding = true; try { return withSeed(G.seed + n * 7919, () => survivalWave(n)); } finally { G._seeding = false; } }
+  const idx = Math.min(8, Math.floor(n / 2));
+  const base = buildWaves(idx, false)[0];
+  const extra = Math.floor(n * 1.5) * (G.mods.has('horde') ? 1.5 : 1);
+  for (let i = 0; i < extra; i++) base.push(pick(base));
+  return base;
+}
 function updateWaves(dt) {
-  if (G.over || G.demo) return;
+  if (G.over || G.demo || G.mode === 'pvp' || (G.net && G.net.guest)) return;
   if (G.bossDeath) {
     const b = G.bossDeath; b.t += dt / G.slow;
     if (b.t < 1.4 && Math.random() < dt * 14) explode(b.x + rand(-60, 60), b.y + rand(-60, 60), rand(50, 90), 0, 'world', '#ffb000', true);
-    if (b.t >= 1.6) { G.bossDeath = null; G.slow = 1; win(); }
+    if (b.t >= 1.6) { G.bossDeath = null; G.slow = 1; if (!G.endless) win(); }
     return;
   }
+  if (G.mode === 'coop' && G.player.dead && ![...G.remotes.values()].some(r => !r.dead)) { G.over = 'lose'; G.overT = 0; sfx('lose'); return; }
   const alive = G.enemies.length + G.portals.length;
   if (G.queue.length) {
     G.spawnT -= dt;
@@ -300,18 +403,36 @@ function updateWaves(dt) {
   G.waveDelay -= dt;
   if (G.waveDelay > 0) return;
   G.wave++;
+  if (G.endless) {
+    const n = G.wave;
+    G.hpMul = 1 + n * .1; G.dmgMul = (1 + n * .05) * (G.mods.has('glass') ? 1.5 : 1); G.cap = 18 + Math.min(16, n);
+    if (n > 0 && (n + 1) % 5 === 0) {
+      spawnBoss(BOSS_OF[Math.floor((n + 1) / 5 - 1) % 3]);
+      G.queue = []; G.waveDelay = 2;
+    } else {
+      G.queue = shuffle(survivalWave(n)); G.spawnT = .8; G.waveDelay = 1.6;
+      G.banner = { title: 'Fala ' + (n + 1), sub: G.queue.length + ' wrogów nadciąga', t: 2.2, max: 2.2 };
+    }
+    if (n > 0) { G.score += 100 * n; healPlayer(10); }
+    return;
+  }
   if (G.wave < G.waves.length) {
-    G.queue = shuffle(G.waves[G.wave].slice()); G.spawnT = .8; G.waveDelay = 1.6;
+    let q = G.waves[G.wave].slice();
+    if (G.net && G.net.host) { const extra = Math.round(q.length * .5 * G.remotes.size); for (let i = 0; i < extra; i++) q.push(pick(q)); }
+    G.queue = shuffle(q); G.spawnT = .8; G.waveDelay = 1.6;
     G.banner = { title: 'Fala ' + (G.wave + 1) + ' / ' + G.waves.length, sub: G.queue.length + ' wrogów nadciąga', t: 2.2, max: 2.2 };
   } else if (G.L.boss && !G.bossSpawned) {
-    G.bossSpawned = true;
-    const type = BOSS_OF[G.bi], p = G.player;
-    let x = WW / 2, y = WH / 2; const a = Math.atan2(WH / 2 - p.y, WW / 2 - p.x);
-    for (let k = 0; k < 30; k++) { x = clamp(p.x + Math.cos(a + rand(-1, 1)) * 420, M + 90, WW - M - 90); y = clamp(p.y + Math.sin(a + rand(-1, 1)) * 420, M + 90, WH - M - 90); if (freeSpot(x, y, 70)) break; }
-    openPortal(type, x, y, true);
-    G.banner = { title: EDEF[type].name, sub: 'Boss nadchodzi', t: 3, max: 3, boss: true };
-    sfx('roar'); G.shake = 10; music.intense = 1;
+    G.bossSpawned = true; spawnBoss(BOSS_OF[G.bi]);
   } else win();
+}
+function spawnBoss(type) {
+  const p = nearestActor(WW / 2, WH / 2) || { x: WW / 2, y: WH / 2 };
+  let x = WW / 2, y = WH / 2; const a = Math.atan2(WH / 2 - p.y, WW / 2 - p.x);
+  for (let k = 0; k < 30; k++) { x = clamp(p.x + Math.cos(a + rand(-1, 1)) * 420, M + 90, WW - M - 90); y = clamp(p.y + Math.sin(a + rand(-1, 1)) * 420, M + 90, WH - M - 90); if (freeSpot(x, y, 70)) break; }
+  openPortal(type, x, y, true);
+  G.banner = { title: EDEF[type].name, sub: 'Boss nadchodzi', t: 3, max: 3, boss: true };
+  if (G.net && G.net.host) G.net.event(['b', type]);
+  sfx('roar'); G.shake = 10; music.intense = 1;
 }
 function win() {
   if (G.over) return;

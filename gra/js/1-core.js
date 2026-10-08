@@ -1,21 +1,27 @@
 'use strict';
 // ================= Narzędzia =================
 const TAU = Math.PI * 2;
-const rand = (a, b) => a + Math.random() * (b - a);
+let RNG = Math.random;
+function mulberry(seed) { let a = seed >>> 0; return () => { a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function withSeed(seed, fn) { const old = RNG; RNG = mulberry(seed); try { return fn(); } finally { RNG = old; } }
+function hashStr(s) { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+const rand = (a, b) => a + RNG() * (b - a);
 const ri = (a, b) => Math.floor(rand(a, b + 1));
 const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
 const lerp = (a, b, t) => a + (b - a) * t;
-const pick = a => a[Math.floor(Math.random() * a.length)];
+const pick = a => a[Math.floor(RNG() * a.length)];
 const hyp = Math.hypot;
 function angDiff(a, b) { let d = (b - a) % TAU; if (d > Math.PI) d -= TAU; if (d < -Math.PI) d += TAU; return d; }
 function hexA(hex, a) { const n = parseInt(hex.slice(1), 16); return 'rgba(' + (n >> 16) + ',' + (n >> 8 & 255) + ',' + (n & 255) + ',' + a + ')'; }
 function mk(w, h) { const c = document.createElement('canvas'); c.width = Math.max(1, w | 0); c.height = Math.max(1, h | 0); return c; }
-function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(RNG() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
 
 // ================= Zapis =================
 const SAVE_KEY = 'strefa0_v1';
 const DEF_SAVE = { coins: 0, unlocked: 0, stars: [0, 0, 0, 0, 0, 0, 0, 0, 0], weapons: ['blaster'],
-  upg: { hp: 0, dmg: 0, dash: 0, gren: 0, mag: 0 }, settings: { quality: 'high', sfx: true, music: true, auto: false } };
+  upg: { hp: 0, dmg: 0, dash: 0, gren: 0, mag: 0 }, settings: { quality: 'high', sfx: true, music: true, auto: false },
+  heroes: ['assault'], hero: 'assault', nick: '', ach: {}, daily: { day: '', best: 0, tries: 0 },
+  stats: { kills: 0, bosses: 0, deaths: 0, survBest: 0, survKills: 0, pvpKills: 0, pvpWins: 0, coopWins: 0, games: 0, coinsEarned: 0, perks: 0, barrels: 0 } };
 function loadSave() {
   const d = JSON.parse(JSON.stringify(DEF_SAVE));
   try {
@@ -24,6 +30,12 @@ function loadSave() {
       Object.assign(d, s);
       d.upg = Object.assign({}, DEF_SAVE.upg, s.upg || {});
       d.settings = Object.assign({}, DEF_SAVE.settings, s.settings || {});
+      d.stats = Object.assign({}, DEF_SAVE.stats, s.stats || {});
+      d.daily = Object.assign({}, DEF_SAVE.daily, s.daily || {});
+      d.ach = Object.assign({}, s.ach || {});
+      if (!Array.isArray(d.heroes) || !d.heroes.length) d.heroes = ['assault'];
+      if (!d.heroes.includes(d.hero)) d.hero = 'assault';
+      if (typeof d.nick !== 'string') d.nick = '';
       if (!Array.isArray(d.stars) || d.stars.length < 9) d.stars = DEF_SAVE.stars.slice();
       if (!Array.isArray(d.weapons) || !d.weapons.length) d.weapons = ['blaster'];
     }
@@ -42,6 +54,42 @@ const WEAPONS = {
   rocket: { name: 'Wyrzutnia Burza', desc: 'Rakiety z wybuchem obszarowym.', price: 950, rate: 1.25, dmg: 42, spd: 640, mag: 4, reload: 1.9, spread: .02, pellets: 1, explode: 95, color: '#ff6b3d', r: 7, range: 760 }
 };
 const WEAPON_KEYS = Object.keys(WEAPONS);
+const HEROES = {
+  assault: { name: 'Szturmowiec', price: 0, desc: 'Furia: przez 6 s strzela 60% szybciej i mocniej.', ability: 'Furia', cd: 16, armor: ['#f2f7ff', '#a9b9d0', '#5b6a84'], visor: '#3ef0ff' },
+  engineer: { name: 'Inżynier', price: 600, desc: 'Wieżyczka: stawia działko, które przez 12 s strzela samo.', ability: 'Wieżyczka', cd: 20, armor: ['#ffe9b0', '#e0a640', '#7a5218'], visor: '#ffb627' },
+  medic: { name: 'Medyk', price: 600, desc: 'Pole leczące: leczy ciebie i drużynę oraz chroni przed obrażeniami.', ability: 'Pole', cd: 22, armor: ['#e8fff0', '#8fdca8', '#2f6a48'], visor: '#8dff6a' }
+};
+const HERO_KEYS = Object.keys(HEROES);
+const ACHS = [
+  { id: 'k100', name: 'Pierwsza krew', desc: 'Pokonaj 100 wrogów', reward: 100, test: s => s.stats.kills >= 100 },
+  { id: 'k1000', name: 'Pogromca roju', desc: 'Pokonaj 1000 wrogów', reward: 400, test: s => s.stats.kills >= 1000 },
+  { id: 'boss1', name: 'Królobójca', desc: 'Pokonaj pierwszego bossa', reward: 150, test: s => s.stats.bosses >= 1 },
+  { id: 'boss3', name: 'Łowca tytanów', desc: 'Pokonaj 3 bossów', reward: 300, test: s => s.stats.bosses >= 3 },
+  { id: 'camp', name: 'Strefa oczyszczona', desc: 'Ukończ wszystkie 9 misji', reward: 500, test: s => s.unlocked >= 8 && s.stars[8] > 0 },
+  { id: 'stars', name: 'Perfekcjonista', desc: 'Zdobądź 27 gwiazdek', reward: 600, test: s => s.stars.reduce((a, b) => a + b, 0) >= 27 },
+  { id: 'surv10', name: 'Twardziel', desc: 'Przetrwaj 10 fal', reward: 200, test: s => s.stats.survBest >= 10 },
+  { id: 'surv25', name: 'Niezniszczalny', desc: 'Przetrwaj 25 fal', reward: 500, test: s => s.stats.survBest >= 25 },
+  { id: 'arsenal', name: 'Kolekcjoner', desc: 'Kup wszystkie bronie', reward: 300, test: s => s.weapons.length >= 5 },
+  { id: 'heroes', name: 'Cała drużyna', desc: 'Odblokuj wszystkich bohaterów', reward: 300, test: s => s.heroes.length >= 3 },
+  { id: 'pvp10', name: 'Gladiator', desc: 'Wyeliminuj 10 graczy w PvP', reward: 250, test: s => s.stats.pvpKills >= 10 },
+  { id: 'pvpwin', name: 'Mistrz areny', desc: 'Wygraj pojedynek PvP', reward: 300, test: s => s.stats.pvpWins >= 1 },
+  { id: 'coop', name: 'Ramię w ramię', desc: 'Wygraj misję w kooperacji', reward: 250, test: s => s.stats.coopWins >= 1 },
+  { id: 'barrels', name: 'Piroman', desc: 'Wysadź 50 beczek', reward: 150, test: s => s.stats.barrels >= 50 },
+  { id: 'daily', name: 'Codzienny rytuał', desc: 'Zagraj w wyzwanie dnia', reward: 100, test: s => s.daily.tries >= 1 }
+];
+const DAILY_MODS = [
+  { id: 'fast', name: 'Szybcy wrogowie', desc: 'Wrogowie są o 30% szybsi' },
+  { id: 'glass', name: 'Szklane działo', desc: 'Zadajesz i otrzymujesz 50% więcej obrażeń' },
+  { id: 'horde', name: 'Horda', desc: 'Fale są o połowę większe' },
+  { id: 'rich', name: 'Gorączka złota', desc: 'Podwójne monety, mniej leczenia' },
+  { id: 'dark', name: 'Zaćmienie', desc: 'Prawie całkowita ciemność' },
+  { id: 'boom', name: 'Wybuchowo', desc: 'Każdy pokonany wróg wybucha' }
+];
+function todayKey() { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+function dailySpec() {
+  const k = todayKey(), h = hashStr('sz-' + k);
+  return withSeed(h, () => { const mods = shuffle(DAILY_MODS.slice()).slice(0, 2); return { key: k, seed: h, biome: ri(0, 2), mods: mods.map(m => m.id), names: mods.map(m => m.name), descs: mods.map(m => m.desc) }; });
+}
 const UPGRADES = {
   hp: { name: 'Pancerz', desc: '+20 maksymalnego zdrowia', max: 5, icon: 'shield', cost: l => 90 + l * 90 },
   dmg: { name: 'Moc broni', desc: '+10% obrażeń wszystkich broni', max: 5, icon: 'bolt', cost: l => 120 + l * 110 },
@@ -100,7 +148,7 @@ function buildWaves(idx, boss) {
     const count = 8 + idx * 2 + w * 4;
     const wave = [];
     for (let i = 0; i < count; i++) {
-      let r = Math.random() * tot;
+      let r = RNG() * tot;
       for (const p of pool) { r -= p[1]; if (r <= 0) { wave.push(p[0]); break; } }
       if (wave.length <= i) wave.push('crawler');
     }

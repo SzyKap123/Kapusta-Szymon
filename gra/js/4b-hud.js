@@ -17,7 +17,7 @@ function roundBtn(b, label, sub, active, color, charge) {
   ctx.fillStyle = 'rgba(8,14,28,.6)'; ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, TAU); ctx.fill();
   ctx.strokeStyle = active ? color : 'rgba(255,255,255,.3)'; ctx.lineWidth = 2.5 * u; ctx.stroke();
   if (charge !== undefined && charge < 1) { ctx.strokeStyle = color; ctx.lineWidth = 4 * u; ctx.beginPath(); ctx.arc(b.x, b.y, b.r - 3 * u, -Math.PI / 2, -Math.PI / 2 + TAU * charge); ctx.stroke(); }
-  ctext(label, b.x, b.y - (sub ? 4 * u : 0), Math.round(13 * u), active ? '#ffffff' : '#aab', 'center', FD);
+  ctext(label, b.x, b.y - (sub ? 4 * u : 0), Math.round(13 * u * Math.min(1, 5.5 / label.length)), active ? '#ffffff' : '#aab', 'center', FD);
   if (sub) ctext(sub, b.x, b.y + 11 * u, Math.round(11 * u), color, 'center', FU);
   ctx.globalAlpha = 1;
 }
@@ -56,6 +56,14 @@ function drawHUD(now) {
     ctext(b.d.name.toUpperCase(), W / 2, by - 12 * u, Math.round(15 * u), '#ff8aa0', 'center', FD);
     bar(bx, by, w, 12 * u, b.hp / b.maxHp, '#ff6a8a', '#a0102e');
     ctx.strokeStyle = 'rgba(255,120,150,.5)'; ctx.lineWidth = 1; ctx.strokeRect(bx - .5, by - .5, w + 1, 12 * u + 1);
+  } else if (G.mode === 'pvp') {
+    const P = G.pvp, rem = [...G.remotes.values()].sort((a, b) => (b.kills || 0) - (a.kills || 0)), lead = rem[0];
+    const left = Math.max(0, P.endAt - G.t), mm = Math.floor(left / 60), ss = Math.floor(left % 60);
+    ctext('ELIMINACJE ' + P.kills + ' / ' + P.target, W / 2, safe.t + 22 * u, Math.round(17 * u), '#ffffff', 'center', FD);
+    ctext((lead ? 'Prowadzi: ' + (P.kills >= (lead.kills || 0) ? 'Ty' : (lead.nick || 'Gracz') + ' (' + (lead.kills || 0) + ')') + ' · ' : 'Czekam na rywali · ') + mm + ':' + String(ss).padStart(2, '0'), W / 2, safe.t + 42 * u, Math.round(12 * u), '#ffb0bd', 'center', FU);
+  } else if (G.endless && G.wave >= 0) {
+    ctext('FALA ' + (G.wave + 1), W / 2, safe.t + 22 * u, Math.round(17 * u), '#ffffff', 'center', FD);
+    ctext('Wynik: ' + G.score + (G.mode === 'daily' ? ' · Wyzwanie dnia' : ''), W / 2, safe.t + 42 * u, Math.round(12 * u), '#ffe08a', 'center', FU);
   } else if (G.wave >= 0) {
     const left = G.enemies.length + G.portals.length + G.queue.length;
     ctext('FALA ' + Math.min(G.wave + 1, G.waves.length) + '/' + G.waves.length, W / 2, safe.t + 22 * u, Math.round(17 * u), '#ffffff', 'center', FD);
@@ -72,7 +80,22 @@ function drawHUD(now) {
     ctext(b.sub, W / 2 - slide, by + 20 * u, Math.round(13 * u), b.boss ? '#ff9aae' : G.B.accent, 'center', FU);
     ctx.globalAlpha = 1;
   }
+  // drużyna
+  if (G.mode === 'coop' && G.remotes.size) {
+    let yy = y + 58 * u;
+    for (const r of G.remotes.values()) {
+      panel(x, yy, 150 * u, 22 * u, 5);
+      ctext((r.nick || 'Gracz').slice(0, 12), x + 8 * u, yy + 11 * u, Math.round(11 * u), r.dead ? '#8ea3c4' : '#ffffff', 'left', FU);
+      bar(x + 88 * u, yy + 8 * u, 54 * u, 6 * u, r.dead ? 0 : r.hp / (r.maxHp || 100), '#7dff8a', '#1f9a4a');
+      yy += 26 * u;
+    }
+  }
+  if (G.feed && G.feed.length) { let fy = safe.t + 70 * u; for (const f of G.feed) { ctx.globalAlpha = Math.min(1, f.t); ctext(f.text, W - safe.r - 16 * u, fy, Math.round(12 * u), '#ffd0d8', 'right', FU); fy += 16 * u; } ctx.globalAlpha = 1; }
   if (G.over) return;
+  if (p.dead) {
+    ctext(G.mode === 'pvp' || G.mode === 'coop' ? 'ODRODZENIE ZA ' + Math.ceil(Math.max(0, p.respawnT)) : '', W / 2, H * .55, Math.round(26 * u), '#ffffff', 'center', FD);
+    return;
+  }
   const touch = !input.mouse || matchMedia('(pointer: coarse)').matches;
   // sterowanie
   if (touch) {
@@ -83,6 +106,8 @@ function drawHUD(now) {
   const dk = p.dashCD <= 0 ? 1 : 1 - p.dashCD / (2.2 * (1 - .12 * save.upg.dash));
   roundBtn(Lh.dash, 'ZRYW', touch ? '' : 'SPACJA', p.dashCD <= 0, '#3ef0ff', dk);
   roundBtn(Lh.gren, 'G', '×' + p.grenades, p.grenades > 0, '#ffb627');
+  const HH = HEROES[p.hero], ak = p.abCD <= 0 ? 1 : 1 - p.abCD / HH.cd;
+  roundBtn(Lh.abil, HH.ability.toUpperCase(), p.abCD > 0 ? Math.ceil(p.abCD) + 's' : (touch ? '' : 'F'), p.abCD <= 0, HH.visor, ak);
   // broń
   const s = Lh.swap, w = curW(p), id = p.weapons[p.wi];
   ctx.save(); ctx.translate(s.x - s.w / 2, s.y - s.h / 2);

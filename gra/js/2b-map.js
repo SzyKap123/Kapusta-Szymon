@@ -38,7 +38,7 @@ function genMap(bi) {
   if (bi === 0) {
     for (let i = 0; i < 9; i++) place(60, (x, y) => { const r = rand(32, 56); addC('rock', x, y, r, sprRock(r, { top1: '#6c7b84', top2: '#2b3840', side: '#1a2329', edge: '#0e151a', hi: 'rgba(200,240,255,.35)', moss: ['#3f8a4a', '#58a855', '#2d6b3a'] })); });
     for (let i = 0; i < 8; i++) place(50, (x, y) => { const R = rand(78, 112); addC('tree', x, y, 22, sprTrunk(), { canopy: sprCanopy(R), cr: R }); });
-    for (let i = 0; i < 8; i++) place(30, (x, y) => { const col = Math.random() < .6 ? '#4dffd2' : '#c77dff'; addC('crystal', x, y, 20, sprCrystal(col, col === '#4dffd2' ? '#1a6a8a' : '#4a2a8a'), { glow: col }); lights.push({ x, y, r: 230, c: col, a: .9, f: rand(0, 6) }); });
+    for (let i = 0; i < 8; i++) place(30, (x, y) => { const col = RNG() < .6 ? '#4dffd2' : '#c77dff'; addC('crystal', x, y, 20, sprCrystal(col, col === '#4dffd2' ? '#1a6a8a' : '#4a2a8a'), { glow: col }); lights.push({ x, y, r: 230, c: col, a: .9, f: rand(0, 6) }); });
   } else if (bi === 1) {
     for (let i = 0; i < 10; i++) place(60, (x, y) => { const r = rand(32, 58); addC('rock', x, y, r, sprRock(r, { top1: '#5a4440', top2: '#1d1413', side: '#110a09', edge: '#070404', hi: 'rgba(255,170,120,.3)', glow: '#ff7a2e' })); });
     for (let i = 0; i < 6; i++) place(34, (x, y) => { addC('spire', x, y, 26, sprSpire()); lights.push({ x, y, r: 120, c: '#ff6a1a', a: .5, f: rand(0, 6) }); });
@@ -66,7 +66,7 @@ function drawGround(bi, props, hazards, lights, rivers) {
     for (let k = 0; k < 3; k++) { // ścieżki
       const p = bezierPts([rand(0, WW), -50], [rand(0, WW), rand(0, WH)], [rand(0, WW), rand(0, WH)], [rand(0, WW), WH + 50], .01);
       [[110, 'rgba(70,58,38,.16)'], [72, 'rgba(84,68,42,.2)'], [40, 'rgba(96,78,50,.2)']].forEach(([w, col]) => { g.strokeStyle = col; g.lineWidth = w; strokePath(g, p); });
-      for (const q of p) if (Math.random() < .5) { g.fillStyle = 'rgba(140,130,110,.35)'; ell(g, q[0] + rand(-30, 30), q[1] + rand(-30, 30), rand(2, 4), rand(1.5, 3)); g.fill(); }
+      for (const q of p) if (RNG() < .5) { g.fillStyle = 'rgba(140,130,110,.35)'; ell(g, q[0] + rand(-30, 30), q[1] + rand(-30, 30), rand(2, 4), rand(1.5, 3)); g.fill(); }
     }
     for (let i = 0; i < 2200; i++) { // kępki trawy
       const x = rand(0, WW), y = rand(0, WH), n = ri(3, 6);
@@ -78,7 +78,7 @@ function drawGround(bi, props, hazards, lights, rivers) {
     g.globalAlpha = 1;
     for (let i = 0; i < 380; i++) { g.fillStyle = hexA(pick(['#6a8a2a', '#8a7a2a', '#4a6a2a']), .6); ell(g, rand(0, WW), rand(0, WH), rand(3, 6), rand(1.5, 3), rand(0, TAU)); g.fill(); }
     for (let i = 0; i < 16; i++) { // świecące grzyby
-      const x = rand(M + 40, WW - M - 40), y = rand(M + 40, WH - M - 40), col = Math.random() < .5 ? '#4dffd2' : '#c77dff';
+      const x = rand(M + 40, WW - M - 40), y = rand(M + 40, WH - M - 40), col = RNG() < .5 ? '#4dffd2' : '#c77dff';
       for (let j = 0; j < ri(3, 7); j++) {
         const mx = x + rand(-22, 22), my = y + rand(-16, 16), r = rand(3, 7);
         g.fillStyle = '#d9e8e0'; g.fillRect(mx - 1, my, 2, r * .8);
@@ -95,7 +95,7 @@ function drawGround(bi, props, hazards, lights, rivers) {
       let x = rand(0, WW), y = rand(0, WH); const pts = [[x, y]];
       for (let j = 0; j < ri(3, 7); j++) { x += rand(-40, 40); y += rand(-40, 40); pts.push([x, y]); }
       g.strokeStyle = '#090505'; g.lineWidth = rand(2, 4); strokePath(g, pts);
-      if (Math.random() < .3) { g.strokeStyle = '#ff6a1a'; g.shadowColor = '#ff5a00'; g.shadowBlur = 10; g.lineWidth = 1.4; strokePath(g, pts); g.shadowBlur = 0; }
+      if (RNG() < .3) { g.strokeStyle = '#ff6a1a'; g.shadowColor = '#ff5a00'; g.shadowBlur = 10; g.lineWidth = 1.4; strokePath(g, pts); g.shadowBlur = 0; }
     }
     for (const r of rivers) {
       [[96, '#140705', 0], [72, '#3a0e04', 0], [52, '#c22e00', 30], [34, '#ff6a00', 24], [16, '#ffb000', 12], [5, '#fff3b0', 6]].forEach(([w, col, b]) => {
@@ -120,7 +120,7 @@ function drawGround(bi, props, hazards, lights, rivers) {
       g.fillStyle = 'rgba(255,255,255,.05)'; g.fillRect(x + 1, y + 1, P - 2, 2); g.fillRect(x + 1, y + 1, 2, P - 2);
       g.fillStyle = 'rgba(0,0,0,.35)'; g.fillRect(x + 1, y + P - 3, P - 2, 2); g.fillRect(x + P - 3, y + 1, 2, P - 2);
       g.fillStyle = '#4a5a70'; for (const [a, b] of [[7, 7], [P - 7, 7], [7, P - 7], [P - 7, P - 7]]) { g.beginPath(); g.arc(x + a, y + b, 1.8, 0, TAU); g.fill(); }
-      if (Math.random() < .08) { g.fillStyle = '#121822'; g.fillRect(x + 18, y + 18, P - 36, P - 36); g.fillStyle = '#2c3a4e'; for (let k = 22; k < P - 22; k += 7) g.fillRect(x + 20, y + k, P - 40, 3); }
+      if (RNG() < .08) { g.fillStyle = '#121822'; g.fillRect(x + 18, y + 18, P - 36, P - 36); g.fillStyle = '#2c3a4e'; for (let k = 22; k < P - 22; k += 7) g.fillRect(x + 20, y + k, P - 40, 3); }
     }
     for (let i = 0; i < 5; i++) {
       const x = rand(M, WW - 300), y = rand(M, WH - 120), w = rand(160, 300), h = rand(40, 80);
@@ -129,7 +129,7 @@ function drawGround(bi, props, hazards, lights, rivers) {
       g.restore();
     }
     for (let i = 0; i < 12; i++) { // świetlne pasy w podłodze
-      const vert = Math.random() < .5, x = rand(M + 60, WW - M - 260), y = rand(M + 60, WH - M - 260), L = rand(140, 260);
+      const vert = RNG() < .5, x = rand(M + 60, WW - M - 260), y = rand(M + 60, WH - M - 260), L = rand(140, 260);
       g.strokeStyle = '#7fe6ff'; g.shadowColor = '#3ec9ff'; g.shadowBlur = 14; g.lineWidth = 3;
       g.beginPath(); g.moveTo(x, y); g.lineTo(vert ? x : x + L, vert ? y + L : y); g.stroke(); g.shadowBlur = 0;
       for (let k = 0; k <= L; k += 90) lights.push({ x: vert ? x : x + k, y: vert ? y + k : y, r: 110, c: '#3ec9ff', a: .55, f: rand(0, 6) });

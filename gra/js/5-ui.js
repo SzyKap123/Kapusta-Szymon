@@ -1,15 +1,25 @@
 'use strict';
 // ================= Ekrany i sterowanie =================
-let state = 'menu', paused = false;
+let state = 'menu', curScreen = 'sMenu';
 const $ = id => document.getElementById(id);
-const SCREENS = ['sMenu', 'sLevels', 'sShop', 'sSet', 'sLvlUp', 'sPause', 'sResult'];
-function show(id) { for (const s of SCREENS) $(s).hidden = s !== id; refreshCoins(); }
+const SCREENS = ['sMenu', 'sLevels', 'sShop', 'sSet', 'sLvlUp', 'sPause', 'sResult', 'sOnline', 'sRoom', 'sRank', 'sAch', 'sDaily'];
+function show(id) { curScreen = id; for (const s of SCREENS) $(s).hidden = s !== id; refreshCoins(); }
 function refreshCoins() { $('mCoins').textContent = save.coins; document.querySelectorAll('.coinVal').forEach(e => e.textContent = save.coins); }
 const touchSticks = { move: { id: null, ox: 0, oy: 0 }, aim: { id: null, ox: 0, oy: 0, t0: 0, max: 0 } };
 function resetInput() { input.mx = input.my = input.ax = input.ay = 0; input.aiming = false; input.mouseDown = false; touchSticks.move.id = touchSticks.aim.id = null; }
+function toast(html) {
+  const box = $('toast'), d = document.createElement('div'); d.innerHTML = html; box.appendChild(d);
+  setTimeout(() => d.remove(), 3200);
+}
+function checkAch() {
+  for (const a of ACHS) if (!save.ach[a.id] && a.test(save)) { save.ach[a.id] = 1; save.coins += a.reward; toast('Osiągnięcie: <b>' + a.name + '</b> · +' + a.reward + ' monet'); sfx('lvl'); }
+  persist(); refreshCoins();
+}
+const online = () => !!(G && G.net);
 
 // ---------- Menu ----------
-function goMenu() { state = 'menu'; resetInput(); newGame(ri(0, 2) * 3, true); show('sMenu'); }
+function goMenu() { state = 'menu'; resetInput(); newGame(ri(0, 2) * 3, true); show('sMenu'); refreshDailySub(); }
+function refreshDailySub() { const d = dailySpec(); $('dailySub').textContent = d.names.join(' + '); }
 function buildLevels() {
   const box = $('biomes'); box.innerHTML = '';
   BIOMES.forEach((b, bi) => {
@@ -27,32 +37,38 @@ function buildLevels() {
   });
   box.querySelectorAll('.node:not([disabled])').forEach(n => n.addEventListener('click', () => { sfx('click'); startLevel(+n.dataset.li); }));
 }
+let shopTab = 'w';
+function buyRow(list, opts) {
+  const row = document.createElement('div'); row.className = 'item cutbox' + (opts.own ? ' own' : '');
+  row.appendChild(opts.icon);
+  row.insertAdjacentHTML('beforeend', '<div><h4' + (opts.color ? ' style="color:' + opts.color + '"' : '') + '>' + opts.name + '</h4><p>' + opts.desc + '</p>' + (opts.pips || '') + '</div>');
+  const b = document.createElement('button'); b.type = 'button';
+  if (opts.tag) { b.className = 'btn small ghost'; b.disabled = !opts.onTag; b.innerHTML = '<span class="tag">' + opts.tag + '</span>'; if (opts.onTag) b.addEventListener('click', opts.onTag); }
+  else { b.className = 'btn small primary'; b.innerHTML = '<span class="price"><i class="coin"></i>' + opts.price + '</span>'; b.disabled = save.coins < opts.price;
+    b.addEventListener('click', () => { if (save.coins < opts.price) return; save.coins -= opts.price; opts.buy(); persist(); sfx('coin'); checkAch(); buildShop(); refreshCoins(); }); }
+  row.appendChild(b); list.appendChild(row);
+}
 function buildShop() {
+  document.querySelectorAll('#shopTabs .btn').forEach(b => b.classList.toggle('on', b.dataset.tab === shopTab));
   const wl = $('wList'); wl.innerHTML = '';
-  for (const k of WEAPON_KEYS) {
+  if (shopTab === 'w') for (const k of WEAPON_KEYS) {
     const w = WEAPONS[k], own = save.weapons.includes(k);
-    const row = document.createElement('div'); row.className = 'item cutbox' + (own ? ' own' : '');
     const cvs = mk(144, 72); const g = cvs.getContext('2d'); g.scale(3, 3); g.translate(4, 12); g.lineJoin = 'round'; drawWeapon(g, k);
     g.globalCompositeOperation = 'lighter'; g.drawImage(glowSpr(w.color), 6, -10, 30, 20);
-    row.appendChild(cvs);
     const dps = Math.round(w.dmg * w.pellets * w.rate);
-    row.insertAdjacentHTML('beforeend', '<div><h4 style="color:' + w.color + '">' + w.name + '</h4><p>' + w.desc + '<br>Obrażenia/s: ' + dps + ' · Magazynek: ' + w.mag + '</p></div>');
-    const b = document.createElement('button'); b.type = 'button';
-    if (own) { b.className = 'btn small ghost'; b.disabled = true; b.innerHTML = '<span class="tag">Masz</span>'; }
-    else { b.className = 'btn small primary'; b.innerHTML = '<span class="price"><i class="coin"></i>' + w.price + '</span>'; b.disabled = save.coins < w.price;
-      b.addEventListener('click', () => { if (save.coins < w.price) return; save.coins -= w.price; save.weapons.push(k); persist(); sfx('coin'); buildShop(); refreshCoins(); }); }
-    row.appendChild(b); wl.appendChild(row);
+    buyRow(wl, { icon: cvs, own, color: w.color, name: w.name, desc: w.desc + '<br>Obrażenia/s: ' + dps + ' · Magazynek: ' + w.mag, tag: own ? 'Masz' : null, price: w.price, buy: () => save.weapons.push(k) });
+  }
+  else for (const k of HERO_KEYS) {
+    const h = HEROES[k], own = save.heroes.includes(k), sel = save.hero === k;
+    const cvs = mk(144, 72); const g = cvs.getContext('2d'); const s = playerSpr(k, 'rifle'); g.drawImage(s.c, 72 - 46, 36 - 46, 92, 92);
+    buyRow(wl, { icon: cvs, own, color: h.visor, name: h.name + ' · ' + h.ability, desc: h.desc, tag: sel ? 'Wybrany' : own ? 'Wybierz' : null, price: h.price,
+      onTag: own && !sel ? () => { save.hero = k; persist(); sfx('click'); buildShop(); } : null, buy: () => { save.heroes.push(k); save.hero = k; } });
   }
   const ul = $('uList'); ul.innerHTML = '';
   for (const k of Object.keys(UPGRADES)) {
-    const up = UPGRADES[k], lv = save.upg[k], max = lv >= up.max, cost = up.cost(lv);
-    const row = document.createElement('div'); row.className = 'item cutbox';
-    row.innerHTML = '<div class="ic">' + svg(up.icon) + '</div><div><h4>' + up.name + '</h4><p>' + up.desc + '</p><div class="pips">' + Array.from({ length: up.max }, (_, i) => '<i' + (i < lv ? ' class="on"' : '') + '></i>').join('') + '</div></div>';
-    const b = document.createElement('button'); b.type = 'button';
-    if (max) { b.className = 'btn small ghost'; b.disabled = true; b.innerHTML = '<span class="tag">Max</span>'; }
-    else { b.className = 'btn small primary'; b.innerHTML = '<span class="price"><i class="coin"></i>' + cost + '</span>'; b.disabled = save.coins < cost;
-      b.addEventListener('click', () => { if (save.coins < cost) return; save.coins -= cost; save.upg[k]++; persist(); sfx('coin'); buildShop(); refreshCoins(); }); }
-    row.appendChild(b); ul.appendChild(row);
+    const up = UPGRADES[k], lv = save.upg[k], max = lv >= up.max;
+    const ic = document.createElement('div'); ic.className = 'ic'; ic.innerHTML = svg(up.icon);
+    buyRow(ul, { icon: ic, name: up.name, desc: up.desc, pips: '<div class="pips">' + Array.from({ length: up.max }, (_, i) => '<i' + (i < lv ? ' class="on"' : '') + '></i>').join('') + '</div>', tag: max ? 'Max' : null, price: up.cost(lv), buy: () => save.upg[k]++ });
   }
 }
 let confirmReset = false;
@@ -74,29 +90,133 @@ function buildSettings() {
     r.appendChild(b); box.appendChild(r);
   }
   const r = document.createElement('div'); r.className = 'setRow cutbox';
-  r.innerHTML = '<span>Postęp gry<small>Usuwa misje, monety i zakupy</small></span>';
+  r.innerHTML = '<span>Postęp gry<small>Usuwa misje, monety, zakupy i osiągnięcia</small></span>';
   const c = document.createElement('div'); c.className = 'confirm';
   if (!confirmReset) { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn small ghost'; b.textContent = 'Wyczyść'; b.addEventListener('click', () => { confirmReset = true; buildSettings(); }); c.appendChild(b); }
   else {
     const y = document.createElement('button'); y.type = 'button'; y.className = 'btn small'; y.style.setProperty('--bg', '#c4142e'); y.textContent = 'Tak, usuń';
-    y.addEventListener('click', () => { const st = save.settings; save = JSON.parse(JSON.stringify(DEF_SAVE)); save.settings = st; persist(); confirmReset = false; buildSettings(); refreshCoins(); });
+    y.addEventListener('click', () => { const st = save.settings, nk = save.nick; save = JSON.parse(JSON.stringify(DEF_SAVE)); save.settings = st; save.nick = nk; persist(); confirmReset = false; buildSettings(); refreshCoins(); });
     const n = document.createElement('button'); n.type = 'button'; n.className = 'btn small ghost'; n.textContent = 'Anuluj'; n.addEventListener('click', () => { confirmReset = false; buildSettings(); });
     c.appendChild(y); c.appendChild(n);
   }
   r.appendChild(c); box.appendChild(r);
 }
+function buildAch() {
+  const s = save.stats;
+  const stats = [['Pokonani wrogowie', s.kills], ['Bossowie', s.bosses], ['Najdłuższe przetrwanie', s.survBest + ' fal'], ['Eliminacje PvP', s.pvpKills], ['Wygrane PvP', s.pvpWins], ['Wygrane w drużynie', s.coopWins], ['Rozegrane gry', s.games], ['Zarobione monety', s.coinsEarned], ['Wysadzone beczki', s.barrels], ['Polegli', s.deaths]];
+  $('statGrid').innerHTML = stats.map(([k, v]) => '<div><b>' + v + '</b>' + k + '</div>').join('');
+  const got = ACHS.filter(a => save.ach[a.id]).length;
+  $('achCount').textContent = 'Osiągnięcia ' + got + ' / ' + ACHS.length;
+  $('achList').innerHTML = ACHS.map(a => '<div class="achRow cutbox' + (save.ach[a.id] ? '' : ' locked') + '"><span class="ic">' + svg(save.ach[a.id] ? 'star' : 'lock', 'fill="currentColor"') + '</span><div><h4>' + a.name + '</h4><p>' + a.desc + '</p></div><span class="price"><i class="coin"></i>' + a.reward + '</span></div>').join('');
+}
+function showDaily() {
+  const d = dailySpec();
+  $('dKick').textContent = 'Wyzwanie dnia · ' + d.key;
+  $('dTitle').textContent = BIOMES[d.biome].name;
+  $('dMods').innerHTML = d.names.map((n, i) => '<div class="mod cutbox"><b>' + n + '</b><span>' + d.descs[i] + '</span></div>').join('');
+  $('dBest').textContent = save.daily.day === d.key && save.daily.best ? 'Twój dzisiejszy rekord: ' + save.daily.best + ' pkt' : 'Ta sama mapa i modyfikatory dla wszystkich graczy. Wynik trafia do rankingu.';
+  show('sDaily');
+}
+
+// ---------- Online: ekrany ----------
+function showOnline() { show('sOnline'); $('nickIn').value = save.nick; initOnline(); refreshOnlineUI(); }
+function refreshOnlineUI() {
+  const st = $('onlineStatus'); if (!st) return;
+  const ok = NET.ok;
+  st.textContent = !NET.done ? 'Łączenie…' : ok ? 'Połączono. Utwórz pokój albo dołącz do znajomych.' : 'Gra online działa w aplikacji Claude dla zalogowanych osób, którym udostępnisz tę grę (menu Udostępnij). Tutaj możesz grać w pozostałe tryby.';
+  for (const id of ['bHostCoop', 'bHostPvp', 'bJoin']) $(id).disabled = !ok;
+  renderOpenRooms();
+  const badge = $('onlineBadge'), n = NET.lobbyPeers.length;
+  badge.hidden = !ok || n < 1; badge.textContent = n + ' online';
+}
+function renderOpenRooms() {
+  const box = $('roomList'); if (!box) return;
+  box.innerHTML = '';
+  const rooms = NET.lobbyPeers.filter(p => !p.sameTab && p.presence && p.presence.host && typeof p.presence.host === 'object');
+  $('onlineBadge').textContent = NET.lobbyPeers.length + ' online'; $('onlineBadge').hidden = !NET.ok || !NET.lobbyPeers.length;
+  if (!rooms.length) { box.innerHTML = '<p class="hint">' + (NET.ok ? 'Brak otwartych pokoi. Utwórz własny!' : 'Niedostępne w tym widoku.') + '</p>'; return; }
+  for (const p of rooms) {
+    const h = p.presence.host, code = cleanCode(h.c); if (!code) continue;
+    const row = document.createElement('div'); row.className = 'roomRow cutbox';
+    const a = document.createElement('b'); a.textContent = MODE_NAMES[h.m] || 'Gra';
+    const nm = document.createElement('span'); nm.textContent = String(p.presence.n || 'Gracz').slice(0, 16) + ' · ' + (h.m === 'pvp' ? 'arena' : 'misja ' + (clamp(num(h.l) | 0, 0, 8) + 1)) + ' · ' + clamp(num(h.k) | 0, 1, 9) + ' graczy' + (h.o ? '' : ' · w grze');
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'btn small primary'; b.textContent = 'Dołącz';
+    b.addEventListener('click', () => { sfx('click'); joinRoom(code, false); });
+    row.append(a, nm, b); box.appendChild(row);
+  }
+}
+function renderRoom() {
+  if (!NET.gr) return;
+  const h = NET.host ? null : hostPeer();
+  const mode = NET.host ? NET.mode : (h && h.presence.m) || 'coop';
+  const li = NET.host ? NET.li : clamp(num(h && h.presence.l) | 0, 0, 8);
+  $('roomTitle').textContent = (MODE_NAMES[mode] || 'Pokój');
+  $('roomCode').textContent = NET.code.toUpperCase();
+  const pl = $('plist'); pl.innerHTML = '';
+  for (const p of NET.peers) {
+    const pr = p.presence || {};
+    const row = document.createElement('div'); row.className = 'prow cutbox';
+    const dot = document.createElement('i'); dot.style.background = (HEROES[pr.h] || HEROES.assault).visor;
+    const nm = document.createElement('span'); nm.textContent = String(pr.n || 'Gracz').slice(0, 16) + (p.sameTab ? ' (ty)' : '');
+    const tag = document.createElement('small'); tag.textContent = (pr.host === 1 ? 'gospodarz · ' : '') + (HEROES[pr.h] || HEROES.assault).name + (pr.gid ? ' · w grze' : '');
+    row.append(dot, nm, tag); pl.appendChild(row);
+  }
+  const ctl = $('roomCtl'); ctl.innerHTML = '';
+  if (NET.host) {
+    ctl.insertAdjacentHTML('beforeend', '<h3>Tryb</h3>');
+    const tabs = document.createElement('div'); tabs.className = 'tabs';
+    for (const m of ['coop', 'pvp']) { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn' + (m === mode ? ' on' : ''); b.textContent = MODE_NAMES[m]; b.addEventListener('click', () => { NET.mode = m; roomPresence(); pushLobbyPresence(); renderRoom(); }); tabs.appendChild(b); }
+    ctl.appendChild(tabs);
+    if (mode === 'coop') {
+      ctl.insertAdjacentHTML('beforeend', '<h3>Misja</h3>');
+      const f = document.createElement('div'); f.className = 'field';
+      const sel = document.createElement('select'); sel.id = 'missionSel';
+      for (let i = 0; i <= save.unlocked; i++) { const o = document.createElement('option'); o.value = i; o.textContent = 'Misja ' + (i + 1) + ' · ' + BIOMES[LEVELS[i].biome].name + (LEVELS[i].boss ? ' (boss)' : ''); if (i === li) o.selected = true; sel.appendChild(o); }
+      sel.addEventListener('change', () => { NET.li = +sel.value; roomPresence(); pushLobbyPresence(); });
+      f.appendChild(sel); ctl.appendChild(f);
+      ctl.insertAdjacentHTML('beforeend', '<p class="hint">Wrogów przybywa z każdym graczem. Polegli odradzają się po 10 s, jeśli ktoś z drużyny przeżyje.</p>');
+    } else ctl.insertAdjacentHTML('beforeend', '<p class="hint">Wszyscy na wszystkich. Pierwszy do 10 eliminacji wygrywa, mecz trwa maksymalnie 5 minut. Używasz kupionych broni i zdolności bohatera.</p>');
+    const go = document.createElement('button'); go.type = 'button'; go.className = 'btn primary'; go.textContent = 'Start'; go.addEventListener('click', () => { sfx('click'); hostStart(); });
+    ctl.appendChild(go);
+  } else {
+    ctl.insertAdjacentHTML('beforeend', '<h3>Ustawienia gospodarza</h3>');
+    const p = document.createElement('p'); p.className = 'hint';
+    p.textContent = h ? (MODE_NAMES[mode] + (mode === 'coop' ? ' · misja ' + (li + 1) + ' · ' + BIOMES[LEVELS[li].biome].name : '') + '. Gra wystartuje, gdy gospodarz naciśnie Start.') : 'Czekam na gospodarza pokoju…';
+    ctl.appendChild(p);
+  }
+  const hh = document.createElement('p'); hh.className = 'hint'; hh.textContent = 'Twój bohater: ' + HEROES[save.hero].name + ' (zmień w Zbrojowni).'; ctl.appendChild(hh);
+}
 
 // ---------- Rozgrywka ----------
-function startLevel(li) {
-  ensureAudio();
+function enterFullscreen() {
   const el = document.documentElement;
   if (el.requestFullscreen && !document.fullscreenElement && matchMedia('(pointer: coarse)').matches)
     el.requestFullscreen().then(() => screen.orientation && screen.orientation.lock && screen.orientation.lock('landscape').catch(() => {})).catch(() => {});
-  resetInput();
-  newGame(li, false);
+}
+function beginPlay() { state = 'play'; show(null); music.intense = 0; save.stats.games++; }
+function startLevel(li) {
+  ensureAudio(); enterFullscreen(); resetInput();
+  newGame(li, false, { mode: 'mission' });
   G.banner = { title: 'Misja ' + (li + 1), sub: BIOMES[LEVELS[li].biome].name + (LEVELS[li].boss ? ' · walka z bossem' : ''), t: 2.4, max: 2.4 };
-  G.waveDelay = 2.2;
-  state = 'play'; show(null); music.intense = 0;
+  G.waveDelay = 2.2; beginPlay();
+}
+function startSurvival() {
+  ensureAudio(); enterFullscreen(); resetInput();
+  newGame(0, false, { mode: 'survival', biome: ri(0, 2) });
+  G.banner = { title: 'Przetrwanie', sub: 'Co 5 fal przybywa boss. Ile wytrzymasz?', t: 2.6, max: 2.6 };
+  G.waveDelay = 2.2; beginPlay();
+}
+function startDaily() {
+  const d = dailySpec();
+  ensureAudio(); enterFullscreen(); resetInput();
+  newGame(0, false, { mode: 'daily', biome: d.biome, seed: d.seed, mods: d.mods });
+  if (save.daily.day !== d.key) { save.daily.day = d.key; save.daily.best = 0; }
+  save.daily.tries++;
+  G.banner = { title: 'Wyzwanie dnia', sub: d.names.join(' · '), t: 2.6, max: 2.6 };
+  G.waveDelay = 2.2; beginPlay();
+}
+function restartCurrent() {
+  if (G.mode === 'survival') startSurvival(); else if (G.mode === 'daily') startDaily(); else startLevel(G.li);
 }
 function openLevelUp() {
   state = 'levelup'; resetInput(); sfx('lvl');
@@ -104,6 +224,7 @@ function openLevelUp() {
   const avail = PERKS.filter(k => (p.perkLv[k.id] || 0) < k.max);
   const choice = shuffle(avail.slice()).slice(0, 3);
   $('luTitle').textContent = 'Poziom ' + (p.lvl - G.pendingLvl + 1);
+  $('luKick').textContent = online() ? 'Awans · gra toczy się dalej!' : 'Awans';
   const box = $('perks'); box.innerHTML = '';
   for (const k of choice) {
     const lv = p.perkLv[k.id] || 0;
@@ -123,40 +244,88 @@ function pauseGame() {
   state = 'paused'; resetInput();
   const p = G.player, box = $('pausePerks');
   box.innerHTML = Object.keys(p.perkLv).map(id => { const k = PERKS.find(x => x.id === id); return '<span>' + svg(k.icon) + k.name + ' ' + p.perkLv[id] + '</span>'; }).join('') || '<span>Brak ulepszeń – zbieraj kryształy doświadczenia</span>';
+  $('bRestart').hidden = online();
+  $('bQuit').textContent = online() ? 'Opuść grę' : 'Wyjdź z misji';
   show('sPause');
 }
 function finishLevel() {
-  const won = G.over === 'win', li = G.li, p = G.player;
-  let bonus = 0, stars = 0;
-  if (won) {
-    bonus = 120 + li * 50; stars = p.hp >= p.maxHp * .66 ? 3 : p.hp >= p.maxHp * .33 ? 2 : 1;
-    save.stars[li] = Math.max(save.stars[li], stars);
-    if (li === save.unlocked && li < 8) save.unlocked = li + 1;
+  const won = G.over === 'win', li = G.li, p = G.player, mode = G.mode;
+  let bonus = 0, stars = 0, title, kick, stats;
+  const s = Math.floor(G.t), time = Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+  if (mode === 'mission' || mode === 'coop') {
+    if (won) {
+      bonus = 120 + li * 50; stars = p.hp >= p.maxHp * .66 ? 3 : p.hp >= p.maxHp * .33 ? 2 : 1;
+      if (mode === 'mission') { save.stars[li] = Math.max(save.stars[li], stars); if (li === save.unlocked && li < 8) save.unlocked = li + 1; }
+      else { save.stats.coopWins++; stars = 0; }
+    }
+    kick = (mode === 'coop' ? 'Kooperacja · ' : '') + 'Misja ' + (li + 1) + ' · ' + G.B.name;
+    title = won ? (li === 8 && mode === 'mission' ? 'Strefa oczyszczona!' : 'Misja ukończona') : (G.netMsg || 'Poległeś');
+    stats = [[G.kills, 'Pokonani'], [p.lvl, 'Poziom'], [time, 'Czas']];
+  } else if (mode === 'pvp') {
+    const rem = [...G.remotes.values()], rank = 1 + rem.filter(r => (r.kills || 0) > G.pvp.kills).length;
+    if (won) { save.stats.pvpWins++; bonus = 200; } else bonus = 40 + G.pvp.kills * 15;
+    kick = 'Pojedynek PvP'; title = G.netMsg || (won ? 'Zwycięstwo!' : 'Miejsce #' + rank);
+    stats = [[G.pvp.kills, 'Eliminacje'], [G.pvp.deaths, 'Śmierci'], [time, 'Czas']];
+    submitScore({ pvpWins: save.stats.pvpWins, pvpKills: save.stats.pvpKills });
+  } else {
+    const waves = Math.max(0, G.wave);
+    bonus = waves * 15;
+    if (mode === 'survival') { save.stats.survBest = Math.max(save.stats.survBest, waves); submitScore({ surv: waves, survKills: G.kills }); }
+    else { save.daily.best = Math.max(save.daily.best, G.score); submitScore({ daily: G.score, dailyDay: todayKey() }); }
+    kick = mode === 'daily' ? 'Wyzwanie dnia · ' + todayKey() : 'Przetrwanie · ' + G.B.name;
+    title = 'Przetrwałeś ' + waves + ' ' + (waves === 1 ? 'falę' : waves % 10 >= 2 && waves % 10 <= 4 && (waves % 100 < 10 || waves % 100 >= 20) ? 'fale' : 'fal');
+    stats = [[G.score, 'Wynik'], [G.kills, 'Pokonani'], [time, 'Czas']];
   }
-  save.coins += G.coins + bonus; persist();
+  save.coins += G.coins + bonus; save.stats.coinsEarned += G.coins + bonus;
+  persist(); checkAch();
   state = 'result'; resetInput();
-  $('rKick').textContent = 'Misja ' + (li + 1) + ' · ' + G.B.name;
-  $('rTitle').textContent = won ? (li === 8 ? 'Strefa oczyszczona!' : 'Misja ukończona') : 'Poległeś';
-  $('rTitle').style.color = won ? '' : '#ff8aa0';
-  $('rStars').innerHTML = won ? [0, 1, 2].map(i => svg('star', 'fill="' + (i < stars ? '#ffc93c' : 'rgba(255,255,255,.15)') + '"' + (i < stars ? ' style="filter:drop-shadow(0 0 10px rgba(255,200,60,.7))"' : ''))).join('') : '';
-  const s = Math.floor(G.t);
-  $('rStats').innerHTML = '<div><b>' + G.kills + '</b>Pokonani</div><div><b>' + p.lvl + '</b>Poziom</div><div><b>' + Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0') + '</b>Czas</div><div><b style="color:#ffe08a">+' + (G.coins + bonus) + '</b>Monety</div>';
+  $('rKick').textContent = kick;
+  $('rTitle').textContent = title;
+  $('rTitle').style.color = won || G.endless ? '' : '#ff8aa0';
+  $('rStars').innerHTML = stars ? [0, 1, 2].map(i => svg('star', 'fill="' + (i < stars ? '#ffc93c' : 'rgba(255,255,255,.15)') + '"' + (i < stars ? ' style="filter:drop-shadow(0 0 10px rgba(255,200,60,.7))"' : ''))).join('') : '';
+  $('rStats').innerHTML = stats.map(([v, k]) => '<div><b>' + v + '</b>' + k + '</div>').join('') + '<div><b style="color:#ffe08a">+' + (G.coins + bonus) + '</b>Monety</div>';
   const btns = $('rBtns'); btns.innerHTML = '';
   const add = (label, cls, fn) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn ' + cls; b.textContent = label; b.addEventListener('click', () => { sfx('click'); fn(); }); btns.appendChild(b); };
-  if (won && li < 8) add('Następna misja', 'primary', () => startLevel(li + 1));
-  add(won ? 'Powtórz' : 'Spróbuj ponownie', won && li < 8 ? '' : 'primary', () => startLevel(li));
-  add('Zbrojownia', 'ghost', () => { goMenu(); buildShop(); show('sShop'); });
-  add('Mapa misji', 'ghost', () => { goMenu(); buildLevels(); show('sLevels'); });
+  if (online()) {
+    add('Wróć do pokoju', 'primary', () => { if (NET.gr) backToRoom(); else { goMenu(); showOnline(); } });
+    add('Menu', 'ghost', () => { leaveRoom(); G.net = null; goMenu(); });
+  } else {
+    if (mode === 'mission' && won && li < 8) add('Następna misja', 'primary', () => startLevel(li + 1));
+    add(won && mode === 'mission' ? 'Powtórz' : 'Zagraj ponownie', mode === 'mission' && won && li < 8 ? '' : 'primary', restartCurrent);
+    if (G.endless) add('Ranking', 'ghost', () => { goMenu(); openRank(mode === 'daily' ? 'daily' : 'surv'); });
+    add('Zbrojownia', 'ghost', () => { goMenu(); buildShop(); show('sShop'); });
+    add('Menu', 'ghost', () => goMenu());
+  }
   show('sResult');
 }
+let rankTab = 'surv';
+function openRank(tab) { rankTab = tab || rankTab; document.querySelectorAll('#rankTabs .btn').forEach(b => b.classList.toggle('on', b.dataset.tab === rankTab)); show('sRank'); initOnline().then(() => loadRanking(rankTab)); loadRanking(rankTab); }
 
 $('bPlay').addEventListener('click', () => { ensureAudio(); sfx('click'); buildLevels(); show('sLevels'); });
+$('bSurv').addEventListener('click', () => { sfx('click'); startSurvival(); });
+$('bDaily').addEventListener('click', () => { ensureAudio(); sfx('click'); showDaily(); });
+$('bDailyGo').addEventListener('click', () => { sfx('click'); startDaily(); });
+$('bOnline').addEventListener('click', () => { ensureAudio(); sfx('click'); showOnline(); });
 $('bShop').addEventListener('click', () => { ensureAudio(); sfx('click'); buildShop(); show('sShop'); });
+$('bAch').addEventListener('click', () => { ensureAudio(); sfx('click'); buildAch(); show('sAch'); });
+$('bRank').addEventListener('click', () => { ensureAudio(); sfx('click'); openRank(); });
 $('bSet').addEventListener('click', () => { ensureAudio(); sfx('click'); confirmReset = false; buildSettings(); show('sSet'); });
+document.querySelectorAll('#shopTabs .btn').forEach(b => b.addEventListener('click', () => { shopTab = b.dataset.tab; sfx('click'); buildShop(); }));
+document.querySelectorAll('#rankTabs .btn').forEach(b => b.addEventListener('click', () => { sfx('click'); openRank(b.dataset.tab); }));
 document.querySelectorAll('[data-back]').forEach(b => b.addEventListener('click', () => { sfx('click'); show('sMenu'); }));
+$('nickIn').addEventListener('change', () => { save.nick = $('nickIn').value.replace(/[^\p{L}\p{N} _.-]/gu, '').trim().slice(0, 14); $('nickIn').value = save.nick; persist(); pushLobbyPresence(); roomPresence(); });
+$('bHostCoop').addEventListener('click', () => { sfx('click'); NET.mode = 'coop'; NET.li = Math.min(save.unlocked, NET.li); joinRoom(newCode(), true); });
+$('bHostPvp').addEventListener('click', () => { sfx('click'); NET.mode = 'pvp'; joinRoom(newCode(), true); });
+$('bJoin').addEventListener('click', () => { sfx('click'); joinRoom($('codeIn').value, false); });
+$('codeIn').addEventListener('keydown', e => { if (e.key === 'Enter') joinRoom($('codeIn').value, false); });
+$('bLeaveRoom').addEventListener('click', () => { sfx('click'); leaveRoom(); showOnline(); });
 $('bResume').addEventListener('click', () => { state = 'play'; show(null); });
-$('bRestart').addEventListener('click', () => startLevel(G.li));
-$('bQuit').addEventListener('click', () => { save.coins += G.coins; persist(); goMenu(); });
+$('bRestart').addEventListener('click', () => restartCurrent());
+$('bQuit').addEventListener('click', () => {
+  save.coins += G.coins; persist();
+  if (online()) { G.net = null; if (NET.gr) { backToRoom(); return; } }
+  goMenu();
+});
 
 // ---------- Dotyk ----------
 function hitBtn(b, x, y, k) { return hyp(x - b.x, y - b.y) < b.r * (k || 1.25); }
@@ -169,6 +338,7 @@ cv.addEventListener('touchstart', e => {
     if (hitBtn(Lh.pause, x, y, 1.5)) { pauseGame(); return; }
     if (hitBtn(Lh.dash, x, y)) { doDash(); continue; }
     if (hitBtn(Lh.gren, x, y)) { throwGrenade(); continue; }
+    if (hitBtn(Lh.abil, x, y)) { useAbility(); continue; }
     if (Math.abs(x - Lh.swap.x) < Lh.swap.w / 2 + 6 && Math.abs(y - Lh.swap.y) < Lh.swap.h / 2 + 6) { swapWeapon(); continue; }
     if (x < W * .42) { if (touchSticks.move.id === null) Object.assign(touchSticks.move, { id: t.identifier, ox: x, oy: y }); }
     else if (touchSticks.aim.id === null) Object.assign(touchSticks.aim, { id: t.identifier, ox: x, oy: y, t0: performance.now(), max: 0 });
@@ -192,7 +362,7 @@ const tEnd = e => {
     if (touchSticks.move.id === t.identifier) { touchSticks.move.id = null; input.mx = input.my = 0; }
     if (touchSticks.aim.id === t.identifier) {
       const s = touchSticks.aim;
-      if (s.max < .25 && performance.now() - s.t0 < 300 && G) G.autoT = .45; // stuknięcie = krótka seria w najbliższego wroga
+      if (s.max < .25 && performance.now() - s.t0 < 300 && G) G.autoT = .45;
       s.id = null; input.ax = input.ay = 0; input.aiming = false;
     }
   }
@@ -209,35 +379,39 @@ cv.addEventListener('mousedown', e => {
   if (hitBtn(Lh.pause, e.clientX, e.clientY, 1.4)) { pauseGame(); return; }
   if (hitBtn(Lh.dash, e.clientX, e.clientY)) { doDash(); return; }
   if (hitBtn(Lh.gren, e.clientX, e.clientY)) { throwGrenade(); return; }
+  if (hitBtn(Lh.abil, e.clientX, e.clientY)) { useAbility(); return; }
   if (Math.abs(e.clientX - Lh.swap.x) < Lh.swap.w / 2 && Math.abs(e.clientY - Lh.swap.y) < Lh.swap.h / 2) { swapWeapon(); return; }
   if (e.button === 2) throwGrenade(); else input.mouseDown = true;
 });
 window.addEventListener('mouseup', () => { input.mouseDown = false; });
 cv.addEventListener('contextmenu', e => e.preventDefault());
 window.addEventListener('keydown', e => {
+  if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT')) return;
   input.keys[e.code] = true;
   if (state === 'play') {
     if (e.code === 'Space' || e.code === 'ShiftLeft') { e.preventDefault(); doDash(); }
     if (e.code === 'KeyQ' || e.code === 'KeyG') throwGrenade();
+    if (e.code === 'KeyF') useAbility();
     if (e.code === 'KeyE' || e.code === 'Tab') { e.preventDefault(); swapWeapon(); }
     if (e.code === 'Escape' || e.code === 'KeyP') pauseGame();
   } else if (state === 'paused' && (e.code === 'Escape' || e.code === 'KeyP')) { state = 'play'; show(null); }
 });
 window.addEventListener('keyup', e => { input.keys[e.code] = false; });
-window.addEventListener('blur', () => { input.keys = {}; input.mouseDown = false; if (state === 'play') pauseGame(); });
-document.addEventListener('visibilitychange', () => { if (document.hidden && state === 'play') pauseGame(); last = performance.now(); });
+window.addEventListener('blur', () => { input.keys = {}; input.mouseDown = false; if (state === 'play' && !online()) pauseGame(); else resetInput(); });
+document.addEventListener('visibilitychange', () => { if (document.hidden && state === 'play' && !online()) pauseGame(); last = performance.now(); });
 window.addEventListener('resize', resize);
 
 // ---------- Start ----------
 initFx(); resize();
 goMenu();
+setTimeout(initOnline, 300);
 let last = performance.now();
 function frame(now) {
   requestAnimationFrame(frame);
   const dt = Math.min(.05, (now - last) / 1000); last = now;
   const portrait = H > W && matchMedia('(pointer: coarse)').matches;
-  if (!portrait && G) {
-    if (state === 'menu' || state === 'play') update(dt);
+  if (G && (!portrait || online())) {
+    if (state === 'menu' || state === 'play' || (online() && (state === 'paused' || state === 'levelup' || state === 'result'))) update(dt);
     if (state === 'play') {
       if (G.pendingLvl > 0 && !G.over) openLevelUp();
       if (G.over && G.overT > (G.over === 'win' ? 1.6 : 1.4)) finishLevel();
@@ -247,4 +421,4 @@ function frame(now) {
   render();
 }
 requestAnimationFrame(frame);
-window.__sz = { startLevel, get G() { return G; }, get state() { return state; } };
+window.__sz = { startLevel, startSurvival, startDaily, get G() { return G; }, get state() { return state; }, NET };
