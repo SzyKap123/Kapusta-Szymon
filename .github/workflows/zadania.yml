@@ -1,0 +1,64 @@
+# Zadania automatyczne serwisu: generowanie typów (9:00 czasu polskiego),
+# rozliczanie meczów (co 3 godziny) i strażnik (alert e-mail, gdy brak typów).
+# Godziny w "cron" są w czasie UTC. GitHub może uruchomić zadanie z kilkuminutowym opóźnieniem.
+name: Zadania automatyczne
+
+on:
+  schedule:
+    - cron: "0 7 * * *"    # 9:00 czasu letniego (generowanie)
+    - cron: "0 8 * * *"    # 9:00 czasu zimowego / ponowienie po błędzie
+    - cron: "0 9 * * *"    # ponowienie po błędzie
+    - cron: "45 9 * * *"   # strażnik (10:45 / 11:45 w Polsce)
+    - cron: "20 */3 * * *" # rozliczanie wyników
+  workflow_dispatch:
+    inputs:
+      job:
+        description: "Które zadanie uruchomić"
+        required: true
+        default: generate
+        type: choice
+        options: [generate, settle, watchdog]
+      force:
+        description: "Wymuś generowanie (pomija sprawdzenie godziny)"
+        type: boolean
+        default: false
+
+concurrency:
+  group: zadania-${{ github.event.schedule || inputs.job }}
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+      API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+      EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
+      ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
+      NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL }}
+      NEXT_PUBLIC_SITE_NAME: ${{ vars.NEXT_PUBLIC_SITE_NAME }}
+      COUPON_PRICE_PLN: ${{ vars.COUPON_PRICE_PLN }}
+      LEAGUE_IDS: ${{ vars.LEAGUE_IDS }}
+      ANTHROPIC_MODEL: ${{ vars.ANTHROPIC_MODEL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Wybór zadania
+        id: pick
+        run: |
+          case "${{ github.event.schedule }}" in
+            "45 9 * * *") echo "job=watchdog" >> "$GITHUB_OUTPUT" ;;
+            "20 */3 * * *") echo "job=settle" >> "$GITHUB_OUTPUT" ;;
+            "") echo "job=${{ inputs.job }}" >> "$GITHUB_OUTPUT" ;;
+            *) echo "job=generate" >> "$GITHUB_OUTPUT" ;;
+          esac
+      - name: Uruchom zadanie
+        run: npx tsx scripts/run-job.ts ${{ steps.pick.outputs.job }} ${{ inputs.force && '--force' || '' }}
