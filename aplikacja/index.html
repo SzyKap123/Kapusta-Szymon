@@ -816,6 +816,9 @@ ol.steps li.done .txt{background:transparent}
 .sharedbar{display:flex;align-items:center;gap:12px;justify-content:space-between;background:color-mix(in srgb, var(--c) 14%, var(--surface));border:1.5px solid color-mix(in srgb, var(--c) 40%, transparent);border-radius:18px;padding:12px 14px}
 .sharedbar b{display:block}.sharedbar small{color:var(--muted)}
 .rcseg button{flex:1}
+.dlqr{background:var(--surface);border-radius:22px;box-shadow:var(--shadow);padding:18px;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center}
+.dlqr svg{width:min(62vw,240px);height:auto;border-radius:10px}
+.dlqr b{font-family:var(--display);font-size:1.1rem}.dlqr small{color:var(--muted);line-height:1.35;max-width:300px}
 </style>
 
 <div class="splash" id="splash" aria-hidden="true" data-noi18n>
@@ -938,6 +941,8 @@ ol.steps li.done .txt{background:transparent}
       <div class="li"><span class="lic" style="--lc:#c43c3c" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg></span><span><b>Usuń wszystkie dane</b><small>Ulubione, oceny, własne przepisy</small></span><button class="btn danger" id="clrAll">Usuń</button></div>
     </div>
     <div class="confirm" id="clrConf" hidden><span>Na pewno usunąć wszystko? Tego nie da się cofnąć.</span><button class="btn" id="clrNo">Nie</button><button class="btn primary" id="clrYes" style="background:#c43c3c;border-color:#c43c3c">Usuń</button></div>
+    <p class="lgh">Pobierz apkę</p>
+    <div class="dlqr"><div id="dlQR"></div><b>Zeskanuj, żeby pobrać apkę</b><small>Pokaż ten kod znajomemu. Na Androidzie zainstaluje apkę, na iPhonie otworzy ją w przeglądarce.</small></div>
     <p class="tiny" style="text-align:center">Owsianka na noc · wartości odżywcze są przybliżone</p>
   </section>
 </div>
@@ -1827,6 +1832,7 @@ function buildStepsEN(f){
 
 /* --- interface translation (PL → EN) --- */
 const DICT = {
+ "Pobierz apkę":"Get the app","Zeskanuj, żeby pobrać apkę":"Scan to download the app","Pokaż ten kod znajomemu. Na Androidzie zainstaluje apkę, na iPhonie otworzy ją w przeglądarce.":"Show this code to a friend. On Android they install the app, on iPhone it opens in the browser.",
  "Laboratorium smaków":"Flavor lab","Apka wymyśla nowe smaki":"The app invents new flavors","Kalendarz owoców":"Fruit calendar","Co jest teraz w sezonie":"What's in season now","Apka wymyśli smak pod Twój gust":"The app invents a flavor for your taste",
  "Skanuj kod kreskowy":"Scan a barcode","Zeskanuj opakowanie, a składnik sam się zaznaczy":"Scan a package and the ingredient ticks itself","Ikona apki":"App icon",
  "Przelicznik miar":"Measure converter","Ile to łyżek, ile gramów?":"Spoons or grams?","Za rzadka? Ile wytrzyma?":"Too runny? How long does it keep?",
@@ -3466,6 +3472,7 @@ function renderMore(){
   $("vegan").checked=st.vegan; $("tintOn").checked=st.tint!==false; $("bfDef").value=st.breakfast||"07:00";
   $("statAll").textContent=`${F.length} gotowych + ${st.custom.length} Twoich`;
   renderIconPicker();
+  const dq=$("dlQR"); if(dq && !dq.firstChild) dq.innerHTML=QR.svg(DL_URL);
   $("msAll").textContent=F.length+st.custom.length; $("msDone").textContent=st.made||0; $("msFav").textContent=st.favs.length;
   $("statDone").textContent= st.made ? "Tak trzymaj! Każdy odhaczony poranek się liczy." : "Odhacz poranne kroki w przepisie, a słoiki się policzą.";
   applyTheme();
