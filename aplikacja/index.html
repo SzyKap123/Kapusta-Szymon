@@ -3,6 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Owsianka">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Owsianka na Noc</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <meta name="theme-color" content="#2b211b">
@@ -819,6 +825,7 @@ ol.steps li.done .txt{background:transparent}
 .dlqr{background:var(--surface);border-radius:22px;box-shadow:var(--shadow);padding:18px;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center}
 .dlqr svg{width:min(62vw,240px);height:auto;border-radius:10px}
 .dlqr b{font-family:var(--display);font-size:1.1rem}.dlqr small{color:var(--muted);line-height:1.35;max-width:300px}
+.dlseg{align-self:stretch;margin-bottom:6px}.dlseg button{flex:1;padding:9px 6px}
 </style>
 
 <div class="splash" id="splash" aria-hidden="true" data-noi18n>
@@ -942,7 +949,7 @@ ol.steps li.done .txt{background:transparent}
     </div>
     <div class="confirm" id="clrConf" hidden><span>Na pewno usunąć wszystko? Tego nie da się cofnąć.</span><button class="btn" id="clrNo">Nie</button><button class="btn primary" id="clrYes" style="background:#c43c3c;border-color:#c43c3c">Usuń</button></div>
     <p class="lgh">Pobierz apkę</p>
-    <div class="dlqr"><div id="dlQR"></div><b>Zeskanuj, żeby pobrać apkę</b><small>Pokaż ten kod znajomemu. Na Androidzie zainstaluje apkę, na iPhonie otworzy ją w przeglądarce.</small></div>
+    <div class="dlqr" data-noi18n><div class="seg dlseg" id="dlSeg"><button type="button" data-o="android">Android</button><button type="button" data-o="ios">iPhone (iOS)</button></div><div id="dlQR"></div><b id="dlT"></b><small id="dlCap"></small></div>
     <p class="tiny" style="text-align:center">Owsianka na noc · wartości odżywcze są przybliżone</p>
   </section>
 </div>
@@ -3472,7 +3479,7 @@ function renderMore(){
   $("vegan").checked=st.vegan; $("tintOn").checked=st.tint!==false; $("bfDef").value=st.breakfast||"07:00";
   $("statAll").textContent=`${F.length} gotowych + ${st.custom.length} Twoich`;
   renderIconPicker();
-  const dq=$("dlQR"); if(dq && !dq.firstChild) dq.innerHTML=QR.svg(DL_URL);
+  renderDl();
   $("msAll").textContent=F.length+st.custom.length; $("msDone").textContent=st.made||0; $("msFav").textContent=st.favs.length;
   $("statDone").textContent= st.made ? "Tak trzymaj! Każdy odhaczony poranek się liczy." : "Odhacz poranne kroki w przepisie, a słoiki się policzą.";
   applyTheme();
@@ -3888,22 +3895,31 @@ function qrText(f){
   return `${nm(f)} – ${L("owsianka na noc","overnight oats")}\n${n.k} kcal, ${n.p} g ${L("białka","protein")}\n\n${L("WIECZOREM","EVENING")}\n${ev.map((s,i)=>`${i+1}. ${cl(s)}`).join("\n")}\n\n${L("RANO","MORNING")}\n${mo.map((s,i)=>`${i+1}. ${cl(s)}`).join("\n")}`;
 }
 const DL_URL = APP_URL + "pobierz.html";
+const IS_IOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform==="MacIntel" && navigator.maxTouchPoints>1);
+let dlOs = IS_IOS ? "ios" : "android";
+const DL_TXT = {
+  android:[()=>L("Zeskanuj, żeby pobrać apkę na Androida","Scan to get the Android app"), ()=>L("Znajomy pobierze plik i zainstaluje apkę. Telefon zapyta o zgodę na instalację spoza Sklepu Play.","Your friend downloads the file and installs the app. The phone asks to allow installs outside the Play Store.")],
+  ios:[()=>L("Zeskanuj, żeby dodać apkę na iPhone'a","Scan to add the app to an iPhone"), ()=>L("Otworzy się instrukcja: apkę dodaje się w Safari przyciskiem „Udostępnij” → „Do ekranu początkowego”. Potem działa jak zwykła aplikacja, z ikoną i bez internetu.","Instructions open: add the app in Safari via “Share” → “Add to Home Screen”. Then it works like a normal app, with an icon and offline.")],
+};
+function renderDl(){
+  const q=$("dlQR"); if(!q) return;
+  q.innerHTML=QR.svg(DL_URL+"#"+dlOs); $("dlT").textContent=DL_TXT[dlOs][0](); $("dlCap").textContent=DL_TXT[dlOs][1]();
+  document.querySelectorAll("#dlSeg button").forEach(b=>{ b.setAttribute("aria-pressed", String(b.dataset.o===dlOs)); b.onclick=()=>{ dlOs=b.dataset.o; renderDl(); }; });
+}
 function showRecommend(){
   const b=$("rcBody");
   const qrBlock=(url, cap)=>`<div class="shqr">${QR.svg(url)}<p class="tiny">${cap}</p></div>`;
-  b.innerHTML = `<div class="seg rcseg" id="rcSeg"><button type="button" data-m="dl" aria-pressed="true">${L("Pobierz apkę","Get the app")}</button><button type="button" data-m="web" aria-pressed="false">${L("Otwórz w przeglądarce","Open in browser")}</button></div>
+  let mode=dlOs;
+  b.innerHTML = `<div class="seg rcseg" id="rcSeg"><button type="button" data-m="android">Android</button><button type="button" data-m="ios">iPhone</button><button type="button" data-m="web">${L("Przeglądarka","Browser")}</button></div>
     <div id="rcQR"></div>
     <div class="shgrid"><button type="button" class="shbtn copy" id="rcCopy">${ICO.copy}${L("Kopiuj link","Copy link")}</button><button type="button" class="shbtn sys" id="rcSend" style="grid-column:auto">${L("Wyślij link…","Send link…")}</button></div>`;
-  let mode="dl";
-  const url=()=>mode==="dl"?DL_URL:APP_URL;
-  const draw=()=>{ $("rcQR").innerHTML = mode==="dl"
-      ? qrBlock(DL_URL, L("Znajomy skanuje kod aparatem i otwiera stronę z przyciskiem „Pobierz”. Na Androidzie instaluje apkę (telefon zapyta o zgodę na instalację z tego źródła). Na iPhonie dostanie wersję w przeglądarce.","Your friend scans the code and gets a page with a “Download” button. On Android they install the app (the phone asks to allow this source). On iPhone they get the browser version."))
-      : qrBlock(APP_URL, L("Otwiera apkę od razu w przeglądarce. Działa na każdym telefonie, także na iPhonie.","Opens the app straight in the browser. Works on any phone, iPhone too."));
+  const url=()=>mode==="web"?APP_URL:DL_URL+"#"+mode;
+  const draw=()=>{ $("rcQR").innerHTML = qrBlock(url(), mode==="web" ? L("Otwiera apkę od razu w przeglądarce. Działa na każdym telefonie.","Opens the app straight in the browser. Works on any phone.") : DL_TXT[mode][1]());
     b.querySelectorAll("#rcSeg button").forEach(x=>x.setAttribute("aria-pressed", String(x.dataset.m===mode))); };
   b.querySelectorAll("#rcSeg button").forEach(x=>x.onclick=()=>{ mode=x.dataset.m; draw(); });
   const copy=(t)=>{ try{ navigator.clipboard.writeText(t).then(()=>toast(L("Skopiowano link","Link copied")),()=>toast(t)); }catch(e){ toast(t); } };
   $("rcCopy").onclick=()=>copy(url());
-  $("rcSend").onclick=()=>{ const t=(mode==="dl"?L("Pobierz apkę z owsiankami na noc: ","Get this overnight oats app: "):L("Zobacz apkę z owsiankami na noc: ","Check out this overnight oats app: "))+url(); if(IS_APK) nativeShare("", t); else if(navigator.share) navigator.share({text:t}).catch(()=>{}); else copy(url()); };
+  $("rcSend").onclick=()=>{ const t=L("Pobierz apkę z owsiankami na noc: ","Get this overnight oats app: ")+url(); if(IS_APK) nativeShare("", t); else if(navigator.share) navigator.share({text:t}).catch(()=>{}); else copy(url()); };
   draw();
   $("recommend").hidden=false;
 }
@@ -4014,6 +4030,7 @@ setView(st.view);
 if(location.hash) route();
 if(!st.onboarded && !location.hash) showWelcome();
 runSplash();
+if(/github\.io$/.test(location.hostname) && "serviceWorker" in navigator){ try{ navigator.serviceWorker.register("sw.js"); }catch(e){} }
 </script>
 
 </html>
