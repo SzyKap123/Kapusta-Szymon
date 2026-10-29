@@ -3874,7 +3874,7 @@ function showPeek(id){
 $("peek").addEventListener("click",e=>{ if(e.target.id==="peek") history.back(); });
 
 /* ===================== kod QR: tekst przepisu i polecanie apki ===================== */
-const APP_URL = "https://szykap123.github.io/kapusta-szymon/aplikacja/";
+const APP_URL = "https://szykap123.github.io/Kapusta-Szymon/aplikacja/";
 function qrText(f){
   const {ev,mo}=buildSteps(f), n=nutrition(f), cl=s=>plain(s).replace(/\s*≈[^)]*?\d+\s?(g|ml)\b/g,"").replace(/\s+/g," ").trim();
   return `${nm(f)} – ${L("owsianka na noc","overnight oats")}\n${n.k} kcal, ${n.p} g ${L("białka","protein")}\n\n${L("WIECZOREM","EVENING")}\n${ev.map((s,i)=>`${i+1}. ${cl(s)}`).join("\n")}\n\n${L("RANO","MORNING")}\n${mo.map((s,i)=>`${i+1}. ${cl(s)}`).join("\n")}`;
