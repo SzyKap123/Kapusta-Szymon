@@ -815,6 +815,7 @@ ol.steps li.done .txt{background:transparent}
 .smonths,.cvings,.trecs,.tseed{flex:none}
 .sharedbar{display:flex;align-items:center;gap:12px;justify-content:space-between;background:color-mix(in srgb, var(--c) 14%, var(--surface));border:1.5px solid color-mix(in srgb, var(--c) 40%, transparent);border-radius:18px;padding:12px 14px}
 .sharedbar b{display:block}.sharedbar small{color:var(--muted)}
+.rcseg button{flex:1}
 </style>
 
 <div class="splash" id="splash" aria-hidden="true" data-noi18n>
@@ -931,7 +932,7 @@ ol.steps li.done .txt{background:transparent}
     <p class="tiny mdone" id="statDone"></p><span id="statAll" hidden></span>
     <p class="lgh">Apka i dane</p>
     <div class="list">
-      <div class="li"><span class="lic" style="--lc:#d9475d" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="m8.2 11 7.6-3.8M8.2 13l7.6 3.8"/></svg></span><span><b>Poleć apkę znajomemu</b><small>Kod QR z linkiem do apki albo do pliku .apk</small></span><button class="btn" id="openRecommend" type="button">Otwórz</button></div>
+      <div class="li"><span class="lic" style="--lc:#d9475d" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="m8.2 11 7.6-3.8M8.2 13l7.6 3.8"/></svg></span><span><b>Poleć apkę znajomemu</b><small>Kod QR do pobrania apki</small></span><button class="btn" id="openRecommend" type="button">Otwórz</button></div>
       <div class="li"><span class="lic" style="--lc:#3d6fb6" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18a4.5 4.5 0 0 1-.5-9 6 6 0 0 1 11.5 1.5A3.8 3.8 0 0 1 17.5 18z"/><path d="M12 10v6M9.5 13.5 12 16l2.5-2.5"/></svg></span><span><b>Kopia zapasowa</b><small>Przenieś przepisy i ustawienia na inny telefon</small></span><button class="btn" id="openBackup" type="button">Otwórz</button></div>
       <div class="li"><span class="lic" style="--lc:#2f8552" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 4.5 4.5L19 7"/></svg></span><span><b>Wyczyść odhaczone kroki</b><small>We wszystkich przepisach</small></span><button class="btn" id="clrChecks">Wyczyść</button></div>
       <div class="li"><span class="lic" style="--lc:#c43c3c" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg></span><span><b>Usuń wszystkie dane</b><small>Ulubione, oceny, własne przepisy</small></span><button class="btn danger" id="clrAll">Usuń</button></div>
@@ -1832,7 +1833,7 @@ const DICT = {
  "smaków w apce":"flavors in the app","zrobionych słoików":"jars made","ulubionych":"favorites","Ty i Twoje miary":"You and your measures","Wygląd i słoik":"Look and jar","Apka i dane":"App and data",
  "Wymyśl swój smak, a apka rozpisze go krok po kroku.":"Invent your own flavor and the app writes it out step by step.",
  "Tak trzymaj! Każdy odhaczony poranek się liczy.":"Keep it up! Every checked-off morning counts.","Odhacz poranne kroki w przepisie, a słoiki się policzą.":"Check off the morning steps in a recipe and jars get counted.",
- "Poleć apkę znajomemu":"Recommend the app","Kod QR z linkiem do apki albo do pliku .apk":"QR code linking to the app or the .apk file","Poleć apkę":"Recommend the app","Podgląd":"Preview",
+ "Poleć apkę znajomemu":"Recommend the app","Kod QR do pobrania apki":"QR code to download the app","Poleć apkę":"Recommend the app","Podgląd":"Preview",
  "Obrazek":"Image",
  "W czym robisz owsiankę?":"What do you make your oats in?","Tak będą rysowane słoiki w całej apce":"This is how jars are drawn across the app","Słoik":"Jar","Z kokardą":"With a bow","Kubek":"Mug","Pudełko":"Lunch box","Zmieniono wygląd słoika":"Jar style changed",
  "Wieczór gotowy!":"Evening done!","Zamknij do rana":"Close until morning","Pokaż poranne kroki":"Show morning steps","Smacznego!":"Enjoy!",
@@ -3879,26 +3880,24 @@ function qrText(f){
   const {ev,mo}=buildSteps(f), n=nutrition(f), cl=s=>plain(s).replace(/\s*≈[^)]*?\d+\s?(g|ml)\b/g,"").replace(/\s+/g," ").trim();
   return `${nm(f)} – ${L("owsianka na noc","overnight oats")}\n${n.k} kcal, ${n.p} g ${L("białka","protein")}\n\n${L("WIECZOREM","EVENING")}\n${ev.map((s,i)=>`${i+1}. ${cl(s)}`).join("\n")}\n\n${L("RANO","MORNING")}\n${mo.map((s,i)=>`${i+1}. ${cl(s)}`).join("\n")}`;
 }
+const DL_URL = APP_URL + "pobierz.html";
 function showRecommend(){
   const b=$("rcBody");
   const qrBlock=(url, cap)=>`<div class="shqr">${QR.svg(url)}<p class="tiny">${cap}</p></div>`;
-  b.innerHTML = `${qrBlock(APP_URL, L("Znajomy skanuje ten kod aparatem i otwiera apkę w przeglądarce. Może ją dodać do ekranu głównego jak aplikację.","Your friend scans this with their camera and opens the app in a browser. They can add it to their home screen like an app."))}
-    <div class="shgrid"><button type="button" class="shbtn copy" id="rcCopy">${ICO.copy}${L("Kopiuj link","Copy link")}</button><button type="button" class="shbtn sys" id="rcSend" style="grid-column:auto">${L("Wyślij link…","Send link…")}</button></div>
-    <hr style="border:0;border-top:1px solid var(--line);margin:6px 0">
-    <label class="field" for="rcApk"><span>${L("Kod do pobrania pliku .apk","Code to download the .apk file")}</span>
-      <small>${L("Wrzuć plik Owsianka.apk na Google Drive, kliknij „Udostępnij” → „Każdy, kto ma link”, skopiuj link i wklej go tutaj.","Upload Owsianka.apk to Google Drive, tap “Share” → “Anyone with the link”, copy the link and paste it here.")}</small>
-      <input type="text" id="rcApk" inputmode="url" placeholder="https://drive.google.com/…" value="${esc(st.apkLink||"")}"></label>
-    <p class="err" id="rcErr" hidden></p>
-    <button type="button" class="btn primary" id="rcMake">${L("Zrób kod do pobrania","Make download code")}</button>
-    <div id="rcApkQR"></div>`;
+  b.innerHTML = `<div class="seg rcseg" id="rcSeg"><button type="button" data-m="dl" aria-pressed="true">${L("Pobierz apkę","Get the app")}</button><button type="button" data-m="web" aria-pressed="false">${L("Otwórz w przeglądarce","Open in browser")}</button></div>
+    <div id="rcQR"></div>
+    <div class="shgrid"><button type="button" class="shbtn copy" id="rcCopy">${ICO.copy}${L("Kopiuj link","Copy link")}</button><button type="button" class="shbtn sys" id="rcSend" style="grid-column:auto">${L("Wyślij link…","Send link…")}</button></div>`;
+  let mode="dl";
+  const url=()=>mode==="dl"?DL_URL:APP_URL;
+  const draw=()=>{ $("rcQR").innerHTML = mode==="dl"
+      ? qrBlock(DL_URL, L("Znajomy skanuje kod aparatem i otwiera stronę z przyciskiem „Pobierz”. Na Androidzie instaluje apkę (telefon zapyta o zgodę na instalację z tego źródła). Na iPhonie dostanie wersję w przeglądarce.","Your friend scans the code and gets a page with a “Download” button. On Android they install the app (the phone asks to allow this source). On iPhone they get the browser version."))
+      : qrBlock(APP_URL, L("Otwiera apkę od razu w przeglądarce. Działa na każdym telefonie, także na iPhonie.","Opens the app straight in the browser. Works on any phone, iPhone too."));
+    b.querySelectorAll("#rcSeg button").forEach(x=>x.setAttribute("aria-pressed", String(x.dataset.m===mode))); };
+  b.querySelectorAll("#rcSeg button").forEach(x=>x.onclick=()=>{ mode=x.dataset.m; draw(); });
   const copy=(t)=>{ try{ navigator.clipboard.writeText(t).then(()=>toast(L("Skopiowano link","Link copied")),()=>toast(t)); }catch(e){ toast(t); } };
-  $("rcCopy").onclick=()=>copy(APP_URL);
-  $("rcSend").onclick=()=>{ const t=L("Zobacz apkę z owsiankami na noc: ","Check out this overnight oats app: ")+APP_URL; if(IS_APK) nativeShare("", t); else if(navigator.share) navigator.share({text:t}).catch(()=>{}); else copy(APP_URL); };
-  const make=()=>{ const v=$("rcApk").value.trim(); $("rcErr").hidden=true;
-    if(!/^https?:\/\/\S+\.\S+/.test(v)){ $("rcErr").textContent=L("Wklej pełny link zaczynający się od https://","Paste a full link starting with https://"); $("rcErr").hidden=false; return; }
-    st.apkLink=v; save();
-    $("rcApkQR").innerHTML=qrBlock(v, L("Znajomy skanuje kod, pobiera plik i instaluje go (telefon zapyta o zgodę na instalację z nieznanego źródła). Tylko Android.","Your friend scans, downloads and installs the file (the phone asks to allow unknown sources). Android only.")); };
-  $("rcMake").onclick=make; if(st.apkLink) make();
+  $("rcCopy").onclick=()=>copy(url());
+  $("rcSend").onclick=()=>{ const t=(mode==="dl"?L("Pobierz apkę z owsiankami na noc: ","Get this overnight oats app: "):L("Zobacz apkę z owsiankami na noc: ","Check out this overnight oats app: "))+url(); if(IS_APK) nativeShare("", t); else if(navigator.share) navigator.share({text:t}).catch(()=>{}); else copy(url()); };
+  draw();
   $("recommend").hidden=false;
 }
 $("rcClose").onclick=()=>history.back();
